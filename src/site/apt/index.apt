@@ -14,16 +14,16 @@ Maven Wagon GitSite
  Essentially, if you have a top-level branch in your project called "gh-pages", which you must create yourself before
  using this wagon, you can deploy your site documentation to that branch and it will be available via the URL
  
----
+-----
 http://username.github.com/reponame
----
+-----
 
  where "username" is your GitHub username and "reponame" is the name of your repository, minus the <<<.git>>>, e.g.
  if your username is <<<tomjones>>> and your repository is <<<my-project.git>>> the url would be
  
----
+-----
 http://tomjones.github.com/my-project
----
+-----
 
 Known issues
 
