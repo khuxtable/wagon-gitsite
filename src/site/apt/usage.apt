@@ -14,78 +14,42 @@ Maven Wagon SCM Usage
  {{{http://maven.apache.org/scm/scm-url-format.html}SCM format}}.
 
 
-Deploying your Maven site to Subversion
+Deploying your Maven site to GitHub
 
- Add the following extensions to your pom and use a wagon-scm url in the distributionManagement site url.
-
-------
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-scm</artifactId>
-        <version>1.0-alpha-7-SNAPSHOT</version>
-      </extension>
-      <extension>
-        <groupId>org.apache.maven.scm</groupId>
-        <artifactId>maven-scm-manager-plexus</artifactId>
-        <version>1.0-beta-3-SNAPSHOT</version>
-      </extension>
-      <extension>
-        <groupId>org.apache.maven.scm</groupId>
-        <artifactId>maven-scm-provider-svnexe</artifactId>
-        <version>1.0-beta-3-SNAPSHOT</version>
-      </extension>
-    </extensions>
-  </build>
-  <distributionManagement>
-    <site>
-      <id>my.svn.server</id>
-      <url>scm:svn:https://username@svn.apache.org/svn/root/module</url>
-    </site>
-  </distributionManagement>
-------
-
-
-Deploying your Maven site to CVS
-
- Same as before, but changing svnexe to cvsexe and using a CVS svn url.
+ Add the following extensions to your pom and use a wagon-gitsite url in the distributionManagement site url.
 
 ------
   <build>
     <extensions>
       <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-scm</artifactId>
-        <version>1.0-alpha-7-SNAPSHOT</version>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-gitexe</artifactId>
+        <version>1.3</version>
       </extension>
       <extension>
         <groupId>org.apache.maven.scm</groupId>
         <artifactId>maven-scm-manager-plexus</artifactId>
-        <version>1.0-beta-3-SNAPSHOT</version>
+        <version>1.3</version>
       </extension>
       <extension>
-        <groupId>org.apache.maven.scm</groupId>
-        <artifactId>maven-scm-provider-cvsexe</artifactId>
-        <version>1.0-beta-3-SNAPSHOT</version>
+        <groupId>org.kathrynhuxtable.maven.wagon</groupId>
+        <artifactId>wagon-gitsite</artifactId>
+        <version>0.1-SNAPSHOT</version>
       </extension>
     </extensions>
   </build>
   <distributionManagement>
     <site>
-      <id>my.cvs.server</id>
-      <url>scm:cvs:ext:username@cvs.apache.org:/cvs/root:module</url>
+      <id>my-project-site</id>
+      <url>gitsite:git@github.com/tomjones/my-project.git</url>
     </site>
   </distributionManagement>
 ------
 
+ You may add an alternate branch following the repository name, separated with a colon (:) if you wish, e.g.
+ 
+-----
+<url>gitsite:git@github.com/tomjones/my-project.git:my-branch</url>
+-----
 
-
-Using a Subversion based remote repository in Maven 2
-
- Not tested yet
-
-
-Using a CVS based remote repository in Maven 2
-
- Not tested yet
+ will deploy the site to the <<<my-branch>>> branch instead of the <<<gh-pages>>> branch.

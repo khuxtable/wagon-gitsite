@@ -1,31 +1,34 @@
  ------
  Introduction
  ------
- Carlos Sanchez
+ Kathryn Huxtable
  ------
- 2006-03-07
+ 2010-04-02
  ------
 
-Maven Wagon SCM
+Maven Wagon GitSite
 
- This project is an implementation of Wagon provider for SCM (Source Control Management) systems,
- using {{{http://maven.apache.org/scm}Maven SCM}}.
+ This project is an implementation of Wagon provider for deploying site documentation to GitHub as site documentation,
+ using GitHub's {{{http://pages.github.com}pages}} system.
  
- It enables Maven to use remote repositories stored in SCM systems (Subversion, CVS, ...)
- and to store Maven sites in SCMs.
-
-
-Features
-
- * Deploy files and directories to several SCM using Maven SCM (only tested with CVS and SVN)
+ Essentially, if you have a top-level branch in your project called "gh-pages", which you must create yourself before
+ using this wagon, you can deploy your site documentation to that branch and it will be available via the URL
  
- * Get files from several SCM using Maven SCM (only tested with CVS and SVN)
+---
+http://username.github.com/reponame
+---
 
+ where "username" is your GitHub username and "reponame" is the name of your repository, minus the <<<.git>>>, e.g.
+ if your username is <<<tomjones>>> and your repository is <<<my-project.git>>> the url would be
+ 
+---
+http://tomjones.github.com/my-project
+---
 
 Known issues
 
- * If the file is changed by the SCM the checksum calculation may not work
-
-   * SVN: when a file has properties svn:eol-style or svn:keywords set
-
-   * CVS: when keywords are expanded
+ * If there are no changes in the site documentation between the version on GitHub, the deploy will fail. This is
+   actually an issue in maven-scm-provider-gitexe.
+   
+ * You must have previously created the gh-pages branch in your GitHub repository following the instructions at
+   {{{http://pages.github.com}http://pages.github.com}}.

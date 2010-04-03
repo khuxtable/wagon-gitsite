@@ -13,20 +13,14 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>org.apache.maven.wagon</groupId>
-		<artifactId>wagon-providers</artifactId>
-		<version>1.0-beta-6</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
-
 	<groupId>org.kathrynhuxtable.maven.wagon</groupId>
 	<artifactId>wagon-gitsite</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<name>Maven Wagon GitHub Pages Provider</name>
 	<description>
-    Wagon for deploying site documentation to the gh-pages branch of a GitHub repository.
+        Wagon for deploying site documentation to the gh-pages branch of a GitHub repository.
     </description>
+	<url>http://khuxtable.github.com/wagon-gitsite</url>
 
 	<dependencies>
 		<dependency>
@@ -52,19 +46,232 @@
 			<version>1.3</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- From wagon-providers -->
+		<dependency>
+			<groupId>org.apache.maven.wagon</groupId>
+			<artifactId>wagon-provider-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.wagon</groupId>
+			<artifactId>wagon-provider-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- From wagon -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
+
+	<!-- From wagon -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-provider-api</artifactId>
+				<version>1.0-beta-7-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-provider-test</artifactId>
+				<version>1.0-beta-7-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-common-test</artifactId>
+				<version>1.0-beta-7-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-common</artifactId>
+				<version>1.0-beta-7-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>3.8.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-interactivity-api</artifactId>
+				<version>1.0-alpha-6</version>
+				<exclusions>
+					<exclusion>
+						<groupId>plexus</groupId>
+						<artifactId>plexus-utils</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.codehaus.plexus</groupId>
+						<artifactId>plexus-container-default</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>classworlds</groupId>
+						<artifactId>classworlds</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-container-default</artifactId>
+				<version>1.0-alpha-9</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-utils</artifactId>
+				<version>1.4.2</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
+			<!-- Configure the compiler plugin to use JDK 1.5. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.1</version>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+				</configuration>
+			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>2.1</version>
 				<configuration>
-					<excludes>
-						<!-- disable testing the CVS SCM as CVS is broken -->
-						<exclude>**/*Cvs*.java</exclude>
-					</excludes>
+					<locales>en</locales>
+					<templateFile>${basedir}/src/site/site.vm</templateFile>
 				</configuration>
 			</plugin>
 		</plugins>
+		<extensions>
+			<extension>
+				<groupId>org.apache.maven.scm</groupId>
+				<artifactId>maven-scm-provider-gitexe</artifactId>
+				<version>1.3</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.scm</groupId>
+				<artifactId>maven-scm-manager-plexus</artifactId>
+				<version>1.3</version>
+			</extension>
+			<extension>
+				<groupId>org.kathrynhuxtable.maven.wagon</groupId>
+				<artifactId>wagon-gitsite</artifactId>
+				<version>0.1-SNAPSHOT</version>
+			</extension>
+		</extensions>
 	</build>
+
+	<distributionManagement>
+		<!-- Site to deploy releases to. -->
+		<repository>
+			<id>ossrh</id>
+			<url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
+		<!-- Site to deploy snapshots to. -->
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<!-- Site to deploy documentation to. -->
+		<site>
+			<id>github-site</id>
+			<url>gitsite:git@github.com/khuxtable/wagon-gitsite.git</url>
+		</site>
+	</distributionManagement>
+
+	<scm>
+		<connection>scm:git:git://github.com/khuxtable/wagon-gitsite.git</connection>
+		<developerConnection>scm:git:git+ssh://git@github.com/khuxtable/wagon-gitsite.git</developerConnection>
+		<url>http://github.com/khuxtable/wagon-gitsite</url>
+	</scm>
+
+	<reporting>
+		<plugins>
+			<!-- Generate the following standard project reports. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<version>2.1.2</version>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>summary</report>
+							<report>dependencies</report>
+							<report>dependency-convergence</report>
+							<report>dependency-management</report>
+							<report>project-team</report>
+							<report>issue-tracking</report>
+							<report>mailing-list</report>
+							<report>plugin-management</report>
+							<report>plugins</report>
+							<report>license</report>
+							<report>scm</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+			<!-- Configure the source cross reference. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<version>2.1</version>
+				<configuration>
+					<outputDirectory>${project.reporting.outputDirectory}/xref</outputDirectory>
+					<doctitle>${project.name} ${project.version} Code Cross-Reference</doctitle>
+					<windowtitle>${project.name} ${project.version} Java API.</windowtitle>
+					<javadocDir>${project.reporting.outputDirectory}/apidocs</javadocDir>
+				</configuration>
+			</plugin>
+			<!-- Generate a tag list report to easily find TODO and FIXME comments. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>taglist-maven-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<tags>
+						<tag>TODO</tag>
+						<tag>FIXME</tag>
+					</tags>
+				</configuration>
+			</plugin>
+			<!--
+				Configure the PMD report, reporting on coding style. This also configures CPD (copy/paste
+				detection) reporting.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<targetJdk>1.6</targetJdk>
+				</configuration>
+			</plugin>
+			<!-- Configure the javadoc. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.6.1</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+						<manifestEntries>
+							<Implementation-Classifier>javadoc</Implementation-Classifier>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
 </project>

@@ -1,11 +1,25 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<project>
-  <body>
-    <menu ref="parent"/>
-    <menu name="Overview">
-      <item name="Introduction" href="index.html"/>
-      <item name="Usage" href="usage.html"/>
-    </menu>
-    <menu ref="reports"/>
-  </body>
+<project name="Wagon GitSite">
+	<publishDate position="navigation-bottom" format="dd MMM yyyy" />
+	<version position="left" />
+	<bannerLeft>
+		<name>kathrynhuxtable.org</name>
+		<src>http://www.kathrynhuxtable.org/imagedir/kathrynhuxtable.org.gif</src>
+		<href>http://www.kathrynhuxtable.org/</href>
+	</bannerLeft>
+	<bannerRight>
+		<name>Wagon GitSite</name>
+	</bannerRight>
+	<body>
+		<links>
+			<item name="Kathryn Huxtable's Projects" href="http://www.kathrynhuxtable.org/blog/projects/" />
+			<item name="kathrynhuxtable.org" href="http://www.kathrynhuxtable.org" />
+		</links>
+
+		<menu name="Wagon GitSite">
+			<item name="Introduction" href="index.html" />
+			<item name="Usage" href="usage.html" />
+		</menu>
+
+		$reports
+	</body>
 </project>
