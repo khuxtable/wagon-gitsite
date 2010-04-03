@@ -240,7 +240,7 @@
 			<extension>
 				<groupId>org.kathrynhuxtable.maven.wagon</groupId>
 				<artifactId>wagon-gitsite</artifactId>
-				<version>0.0.1-SNAPSHOT</version>
+				<version>0.0.9</version>
 			</extension>
 		</extensions>
 	</build>
