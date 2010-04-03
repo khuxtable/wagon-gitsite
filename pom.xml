@@ -265,7 +265,7 @@
 
 	<scm>
 		<connection>scm:git:git://github.com/khuxtable/wagon-gitsite.git</connection>
-		<developerConnection>scm:git:git+ssh://git@github.com/khuxtable/wagon-gitsite.git</developerConnection>
+		<developerConnection>scm:git:ssh://git@github.com/khuxtable/wagon-gitsite.git</developerConnection>
 		<url>http://github.com/khuxtable/wagon-gitsite</url>
 	</scm>
 
