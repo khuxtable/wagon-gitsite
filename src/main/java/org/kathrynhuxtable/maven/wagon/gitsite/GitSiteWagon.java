@@ -63,7 +63,7 @@ import org.codehaus.plexus.util.StringUtils;
  * Wagon provider to deploy site documentation to GitHub's pages system.
  *
  * <p>This should do more or less the following, but doesn't because it doesn't
- * delete old files.</p>
+ * delete old files, nor does it tag the site docs.</p>
  *
  * <pre>
  * mkdir ${checkoutDirectory}
@@ -75,6 +75,8 @@ import org.codehaus.plexus.util.StringUtils;
  * git add .
  * git commit -a -m "Deploy site documentation."
  * git push origin master:${siteBranch}
+ * git tag -a ${project.artifactId}-site-${project.version} -m "Tagging site docs for ${project.version}"
+ * git push origin --tags
  * rm -Rf ${checkoutDirectory}
  * </pre>
  *
