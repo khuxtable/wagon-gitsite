@@ -60,15 +60,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 
 /**
- * Wagon provider to get and put files from and to SCM systems, using Maven-SCM
- * as underlying transport.
- *
- * <p>TODO it probably creates problems if the same wagon is used in two
- * different SCM protocols, as instance variables can keep incorrect state.
- * TODO: For doing releases we either have to be able to add files with checking
- * out the repository structure which may not be possible, or the checkout
- * directory needs to be a constant. Doing releases won't scale if you have to
- * checkout the whole repository structure in order to add 3 files.</p>
+ * Wagon provider to deploy site documentation to GitHub's pages system.
  *
  * <p>This should do more or less the following, but doesn't because it doesn't
  * delete old files.</p>
