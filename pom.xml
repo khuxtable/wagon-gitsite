@@ -21,6 +21,46 @@
         Wagon for deploying site documentation to the gh-pages branch of a GitHub repository.
     </description>
 	<url>http://khuxtable.github.com/wagon-gitsite</url>
+	<inceptionYear>2010</inceptionYear>
+	<developers>
+		<developer>
+			<id>khuxtable</id>
+			<name>Kathryn Huxtable</name>
+			<email>kathryn@kathrynhuxtable.org</email>
+			<url>http://www.kathrynhuxtable.org</url>
+			<organization>kathrynhuxtable.org</organization>
+			<organizationUrl>http://www.kathrynhuxtable.org</organizationUrl>
+			<roles>
+				<role>architect</role>
+				<role>developer</role>
+			</roles>
+			<timezone>-6</timezone>
+		</developer>
+	</developers>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<organization>
+		<name>kathrynhuxtable.org</name>
+		<url>http://www.kathrynhuxtable.org</url>
+	</organization>
+	<issueManagement>
+		<system>GitHub</system>
+		<url>http://github.com/khuxtable/wagon-gitsite/issues</url>
+	</issueManagement>
+	<mailingLists>
+		<mailingList>
+			<name>Kathryn Huxtable's Projects</name>
+			<subscribe>kathryn-huxtable-projects+subscribe@googlegroups.com</subscribe>
+			<unsubscribe>kathryn-huxtable-projects+unsubscribe@googlegroups.com</unsubscribe>
+			<post>kathryn-huxtable-projects@googlegroups.com</post>
+			<archive>http://groups.google.com/group/kathryn-huxtable-projects</archive>
+		</mailingList>
+	</mailingLists>
 
 	<dependencies>
 		<dependency>
