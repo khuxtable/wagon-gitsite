@@ -83,8 +83,6 @@ import org.kathrynhuxtable.maven.wagon.gitsite.git.GitSiteCheckOutCommand;
  * git add .
  * git commit -a -m "Wagon: Deploying site to repository"
  * git push origin master:${siteBranch}
- * git tag -a ${project.artifactId}-site-${project.version} -m "Wagon: site documentation for ${project.version}"
- * git push origin --tags
  * rm -Rf ${checkoutDirectory}
  * </pre>
  *
