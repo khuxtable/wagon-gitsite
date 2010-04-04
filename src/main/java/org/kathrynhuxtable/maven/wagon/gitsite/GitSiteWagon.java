@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 
+import org.apache.maven.scm.CommandParameter;
+import org.apache.maven.scm.CommandParameters;
 import org.apache.maven.scm.ScmBranch;
 import org.apache.maven.scm.ScmException;
 import org.apache.maven.scm.ScmFile;
@@ -35,6 +37,7 @@ import org.apache.maven.scm.ScmFileSet;
 import org.apache.maven.scm.ScmResult;
 import org.apache.maven.scm.ScmVersion;
 import org.apache.maven.scm.command.add.AddScmResult;
+import org.apache.maven.scm.command.checkin.CheckInScmResult;
 import org.apache.maven.scm.command.checkout.CheckOutScmResult;
 import org.apache.maven.scm.command.list.ListScmResult;
 import org.apache.maven.scm.manager.NoSuchScmProviderException;
@@ -42,6 +45,8 @@ import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.provider.ScmProvider;
 import org.apache.maven.scm.provider.ScmProviderRepository;
 import org.apache.maven.scm.provider.ScmProviderRepositoryWithHost;
+import org.apache.maven.scm.provider.git.command.GitCommand;
+import org.apache.maven.scm.provider.git.gitexe.GitExeScmProvider;
 import org.apache.maven.scm.repository.ScmRepository;
 import org.apache.maven.scm.repository.ScmRepositoryException;
 import org.apache.maven.wagon.AbstractWagon;
@@ -59,11 +64,14 @@ import org.apache.maven.wagon.resource.Resource;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 
+import org.kathrynhuxtable.maven.wagon.gitsite.git.GitSiteCheckInCommand;
+import org.kathrynhuxtable.maven.wagon.gitsite.git.GitSiteCheckOutCommand;
+
 /**
  * Wagon provider to deploy site documentation to GitHub's pages system.
  *
  * <p>This should do more or less the following, but doesn't because it doesn't
- * delete old files, nor does it tag the site docs.</p>
+ * actually delete old files.</p>
  *
  * <pre>
  * mkdir ${checkoutDirectory}
@@ -73,9 +81,9 @@ import org.codehaus.plexus.util.StringUtils;
  * git pull origin refs/heads/${siteBranch}
  * <replace the contents of the checkout directory, except for the .git subdirectory, with the site docs>
  * git add .
- * git commit -a -m "Deploy site documentation."
+ * git commit -a -m "Wagon: Deploying site to repository"
  * git push origin master:${siteBranch}
- * git tag -a ${project.artifactId}-site-${project.version} -m "Tagging site docs for ${project.version}"
+ * git tag -a ${project.artifactId}-site-${project.version} -m "Wagon: site documentation for ${project.version}"
  * git push origin --tags
  * rm -Rf ${checkoutDirectory}
  * </pre>
@@ -290,7 +298,7 @@ public class GitSiteWagon extends AbstractWagon {
 
             firePutStarted(target, source);
 
-            String msg = "Wagon: Adding " + source.getName() + " to repository";
+            String msg = "Wagon: Deploying " + source.getName() + " to repository";
 
             ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
 
@@ -320,9 +328,7 @@ public class GitSiteWagon extends AbstractWagon {
                 }
             }
 
-            ScmResult result = scmProvider.checkIn(scmRepository, new ScmFileSet(checkoutDirectory), new ScmBranch(siteBranch), msg);
-
-            checkScmResult(result);
+            checkIn(scmProvider, scmRepository, msg);
         } catch (ScmException e) {
             e.printStackTrace();
             fireTransferError(target, e, TransferEvent.REQUEST_GET);
@@ -340,6 +346,29 @@ public class GitSiteWagon extends AbstractWagon {
         }
 
         firePutCompleted(target, source);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  scmProvider
+     * @param  scmRepository
+     * @param  msg
+     *
+     * @throws ScmException
+     */
+    private void checkIn(ScmProvider scmProvider, ScmRepository scmRepository, String msg) throws ScmException {
+        CommandParameters parameters = new CommandParameters();
+
+        parameters.setScmVersion(CommandParameter.SCM_VERSION, new ScmBranch(siteBranch));
+
+        parameters.setString(CommandParameter.MESSAGE, msg);
+
+        ScmResult result = (CheckInScmResult) executeCommand((GitExeScmProvider) scmProvider, new GitSiteCheckInCommand(),
+                                                             scmRepository.getProviderRepository(),
+                                                             new ScmFileSet(checkoutDirectory), parameters);
+
+        checkScmResult(result);
     }
 
     /**
@@ -389,9 +418,15 @@ public class GitSiteWagon extends AbstractWagon {
         try {
             scmRepository = getScmRepository(getRepository().getUrl());
 
-            CheckOutScmResult ret = scmProvider.checkOut(scmRepository,
-                                                         new ScmFileSet(new File(checkoutDirectory, "")), new ScmBranch(siteBranch),
-                                                         false);
+            CommandParameters parameters = new CommandParameters();
+
+            parameters.setScmVersion(CommandParameter.SCM_VERSION, new ScmBranch(siteBranch));
+
+            parameters.setString(CommandParameter.RECURSIVE, "false");
+
+            CheckOutScmResult ret = (CheckOutScmResult) executeCommand((GitExeScmProvider) scmProvider, new GitSiteCheckOutCommand(),
+                                                                       scmRepository.getProviderRepository(),
+                                                                       new ScmFileSet(new File(checkoutDirectory, "")), parameters);
 
             checkScmResult(ret);
         } catch (ScmException e) {
@@ -731,5 +766,25 @@ public class GitSiteWagon extends AbstractWagon {
         String fname = StringUtils.replace(filename, "/", File.separator);
 
         return FileUtils.dirname(fname);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  scmProvider DOCUMENT ME!
+     * @param  command     DOCUMENT ME!
+     * @param  repository  DOCUMENT ME!
+     * @param  fileSet     DOCUMENT ME!
+     * @param  parameters  DOCUMENT ME!
+     *
+     * @return DOCUMENT ME!
+     *
+     * @throws ScmException DOCUMENT ME!
+     */
+    protected ScmResult executeCommand(GitExeScmProvider scmProvider, GitCommand command, ScmProviderRepository repository,
+            ScmFileSet fileSet, CommandParameters parameters) throws ScmException {
+        command.setLogger(scmProvider.getLogger());
+
+        return command.execute(repository, fileSet, parameters);
     }
 }

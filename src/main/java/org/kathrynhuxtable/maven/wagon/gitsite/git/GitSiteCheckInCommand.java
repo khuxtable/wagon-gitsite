@@ -1,0 +1,202 @@
+package org.kathrynhuxtable.maven.wagon.gitsite.git;
+
+import java.io.File;
+import java.io.IOException;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.maven.scm.ScmException;
+import org.apache.maven.scm.ScmFile;
+import org.apache.maven.scm.ScmFileSet;
+import org.apache.maven.scm.ScmFileStatus;
+import org.apache.maven.scm.ScmVersion;
+import org.apache.maven.scm.command.checkin.AbstractCheckInCommand;
+import org.apache.maven.scm.command.checkin.CheckInScmResult;
+import org.apache.maven.scm.log.ScmLogger;
+import org.apache.maven.scm.provider.ScmProviderRepository;
+import org.apache.maven.scm.provider.git.command.GitCommand;
+import org.apache.maven.scm.provider.git.gitexe.command.GitCommandLineUtils;
+import org.apache.maven.scm.provider.git.gitexe.command.add.GitAddCommand;
+import org.apache.maven.scm.provider.git.gitexe.command.branch.GitBranchCommand;
+import org.apache.maven.scm.provider.git.gitexe.command.status.GitStatusCommand;
+import org.apache.maven.scm.provider.git.gitexe.command.status.GitStatusConsumer;
+import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
+import org.apache.maven.scm.provider.git.util.GitUtil;
+
+import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
+import org.codehaus.plexus.util.cli.Commandline;
+
+/**
+ * DOCUMENT ME!
+ *
+ * @author  <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
+ * @version $Id: GitSiteCheckInCommand.java 823147 2009-10-08 12:39:23Z struberg $
+ */
+public class GitSiteCheckInCommand extends AbstractCheckInCommand implements GitCommand {
+
+    /**
+     * {@inheritDoc}
+     */
+    protected CheckInScmResult executeCheckInCommand(ScmProviderRepository repo, ScmFileSet fileSet, String message, ScmVersion version)
+        throws ScmException {
+        GitScmProviderRepository repository = (GitScmProviderRepository) repo;
+
+        CommandLineUtils.StringStreamConsumer stderr = new CommandLineUtils.StringStreamConsumer();
+        CommandLineUtils.StringStreamConsumer stdout = new CommandLineUtils.StringStreamConsumer();
+
+        int exitCode;
+
+        File messageFile = FileUtils.createTempFile("maven-scm-", ".commit", null);
+
+        try {
+            FileUtils.fileWrite(messageFile.getAbsolutePath(), message);
+        } catch (IOException ex) {
+            return new CheckInScmResult(null, "Error while making a temporary file for the commit message: " + ex.getMessage(), null,
+                                        false);
+        }
+
+        try {
+            if (!fileSet.getFileList().isEmpty()) {
+                // if specific fileSet is given, we have to git-add them first
+                // otherwise we will use 'git-commit -a' later
+
+                Commandline clAdd = GitAddCommand.createCommandLine(fileSet.getBasedir(), fileSet.getFileList());
+
+                exitCode = GitCommandLineUtils.execute(clAdd, stdout, stderr, getLogger());
+
+                if (exitCode != 0) {
+                    return new CheckInScmResult(clAdd.toString(), "The git-add command failed.", stderr.getOutput(), false);
+                }
+            }
+
+            // git-commit doesn't show single files, but only summary :/
+            // so we must run git-status and consume the output.
+            // borrow a few things from the git-status command.
+            Commandline clStatus = GitStatusCommand.createCommandLine(repository, fileSet);
+
+            GitStatusConsumer statusConsumer = new GitStatusConsumer(getLogger(), fileSet.getBasedir());
+
+            exitCode = GitCommandLineUtils.execute(clStatus, statusConsumer, stderr, getLogger());
+            if (exitCode != 0) {
+                // git-status returns non-zero if nothing to do
+                if (getLogger().isInfoEnabled()) {
+                    getLogger().info("nothing added to commit but untracked files present (use \"git add\" to "
+                                     + "track)");
+                }
+            }
+
+            Commandline clCommit = createCommitCommandLine(repository, fileSet, messageFile);
+
+            exitCode = GitCommandLineUtils.execute(clCommit, stdout, stderr, getLogger());
+            if (exitCode != 0) {
+                return new CheckInScmResult(clCommit.toString(), "The git-commit command failed.", stderr.getOutput(), false);
+            }
+
+            Commandline cl = createPushCommandLine(getLogger(), repository, fileSet, version);
+
+            exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
+            if (exitCode != 0) {
+                return new CheckInScmResult(cl.toString(), "The git-push command failed.", stderr.getOutput(), false);
+            }
+
+            List checkedInFiles = new ArrayList(statusConsumer.getChangedFiles().size());
+
+            // rewrite all detected files to now have status 'checked_in'
+            for (Iterator it = statusConsumer.getChangedFiles().iterator(); it.hasNext();) {
+                ScmFile scmfile = new ScmFile(((ScmFile) it.next()).getPath(), ScmFileStatus.CHECKED_IN);
+
+                if (fileSet.getFileList().isEmpty()) {
+                    checkedInFiles.add(scmfile);
+                } else {
+                    // if a specific fileSet is given, we have to check if the file is really tracked
+                    for (Iterator itfl = fileSet.getFileList().iterator(); itfl.hasNext();) {
+                        File f = (File) itfl.next();
+
+                        if (f.toString().equals(scmfile.getPath())) {
+                            checkedInFiles.add(scmfile);
+                        }
+                    }
+                }
+            }
+
+            return new CheckInScmResult(cl.toString(), checkedInFiles);
+        } finally {
+            try {
+                FileUtils.forceDelete(messageFile);
+            } catch (IOException ex) {
+                // ignore
+            }
+        }
+    }
+
+    /**
+     * Create the push command.
+     *
+     * <p>git push origin master:${siteBranch}</p>
+     *
+     * @param  logger     DOCUMENT ME!
+     * @param  repository DOCUMENT ME!
+     * @param  fileSet    DOCUMENT ME!
+     * @param  version    DOCUMENT ME!
+     *
+     * @return DOCUMENT ME!
+     *
+     * @throws ScmException DOCUMENT ME!
+     */
+    public static Commandline createPushCommandLine(ScmLogger logger, GitScmProviderRepository repository, ScmFileSet fileSet,
+            ScmVersion version) throws ScmException {
+        Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "push");
+
+        cl.createArg().setValue("origin");
+
+        String branch = GitBranchCommand.getCurrentBranch(logger, repository, fileSet);
+
+        if (branch == null || branch.length() == 0) {
+            throw new ScmException("Could not detect the current branch. Don't know where I should push to!");
+        }
+
+        cl.createArg().setValue(branch + ":" + version.getName());
+
+        return cl;
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  repository  DOCUMENT ME!
+     * @param  fileSet     DOCUMENT ME!
+     * @param  messageFile DOCUMENT ME!
+     *
+     * @return DOCUMENT ME!
+     *
+     * @throws ScmException DOCUMENT ME!
+     */
+    public static Commandline createCommitCommandLine(GitScmProviderRepository repository, ScmFileSet fileSet, File messageFile)
+        throws ScmException {
+        Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "commit");
+
+        cl.createArg().setValue("--verbose");
+
+        cl.createArg().setValue("-F");
+
+        cl.createArg().setValue(messageFile.getAbsolutePath());
+
+        if (fileSet.getFileList().isEmpty()) {
+            // commit all tracked files
+            cl.createArg().setValue("-a");
+        } else {
+            // specify exactly which files to commit
+            GitCommandLineUtils.addTarget(cl, fileSet.getFileList());
+        }
+
+        if (GitUtil.getSettings().isCommitNoVerify()) {
+            cl.createArg().setValue("--no-verify");
+        }
+
+        return cl;
+    }
+
+}
