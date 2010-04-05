@@ -9,7 +9,8 @@
 		WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 		specific language governing permissions and limitations under the License.
 	-->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.kathrynhuxtable.maven.wagon</groupId>
@@ -143,6 +144,84 @@
 					<templateFile>${basedir}/src/site/site.vm</templateFile>
 				</configuration>
 			</plugin>
+			<!--
+				Configure the docbkx plugin, which is a more fully featured DocBook converter than the one
+				included in Doxia. In particular, it does language-based syntax highlighting in programlisting
+				elements. This is run in the pre-site phase and generates its output to the html directory of
+				the generated site directory.
+			-->
+			<plugin>
+				<groupId>com.agilejava.docbkx</groupId>
+				<artifactId>docbkx-maven-plugin</artifactId>
+				<version>2.0.10</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate-xhtml</goal>
+						</goals>
+						<phase>pre-site</phase>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>net.sf.docbook</groupId>
+						<artifactId>docbook-xml</artifactId>
+						<version>5.0-all</version>
+						<classifier>resources</classifier>
+						<type>zip</type>
+						<scope>runtime</scope>
+					</dependency>
+				</dependencies>
+				<configuration>
+                    <chunkedOutput>false</chunkedOutput>
+                    <sourceDirectory>${basedir}/src/site/docbook</sourceDirectory>
+                    <includes>**/*.xml,**/*.xml.vm</includes>
+                    <targetDirectory>${project.build.directory}/generated-site/docbook-xhtml</targetDirectory>
+                    <generateMetaAbstract>false</generateMetaAbstract>
+                    <generateToc>false</generateToc>
+                    <highlightSource>true</highlightSource>
+                    <highlightDefaultLanguage />
+                    <xhtmlCustomization>${basedir}/src/site/xsl/html.xsl</xhtmlCustomization>
+                    <htmlCustomization>${basedir}/src/site/xsl/html.xsl</htmlCustomization>
+                    <imgSrcPath>./</imgSrcPath>
+                    <htmlCellSpacing>2</htmlCellSpacing>
+                    <htmlCellPadding>2</htmlCellPadding>
+                    <suppressHeaderNavigation>1</suppressHeaderNavigation>
+                    <suppressFooterNavigation>1</suppressFooterNavigation>
+                    <tableBordersWithCss>true</tableBordersWithCss>
+                    <tableFrameBorderThickness>0</tableFrameBorderThickness>
+                    <tableCellBorderThickness>0</tableCellBorderThickness>
+                    <targetFileExtension>html</targetFileExtension>
+                    <useExtensions>true</useExtensions>
+                    <calloutsExtension>true</calloutsExtension>
+				</configuration>
+			</plugin>
+			<!--
+				Configure the HTML Filter Site plugin. This runs *after* the docbkx plugin in the pre-site phase
+				and runs Velocity on the files and makes them look more like Doxia-generated files without
+				stripping all the useful DocBook formatting like Doxia does. It first runs JTidy to make the
+				files XHTML-compliant. When version 2.0.10 of the docbkx plugin is released we can generate
+				XHTML and won't need the "tidy" goal.
+			-->
+			<plugin>
+				<groupId>org.kathrynhuxtable.maven.plugins</groupId>
+				<artifactId>htmlfilter-site-maven-plugin</artifactId>
+				<version>0.3.3</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>merge</goal>
+						</goals>
+						<phase>pre-site</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<sourceDirectory>${project.build.directory}/generated-site/docbook-xhtml</sourceDirectory>
+					<filePattern>**/*.html,**/*.xm.html</filePattern>
+					<filterExtension>.xm.html</filterExtension>
+					<targetDirectory>${project.build.directory}/generated-site/resources</targetDirectory>
+				</configuration>
+			</plugin>
 		</plugins>
 		<extensions>
 			<extension>
@@ -157,113 +236,113 @@
 			</extension>
 		</extensions>
 	</build>
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-api</artifactId>
-            <version>1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-manager-plexus</artifactId>
-            <version>1.3</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-test</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-gitexe</artifactId>
-            <version>1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-git-commons</artifactId>
-            <version>1.3</version>
-        </dependency>
-        <!-- From wagon-providers -->
-        <dependency>
-            <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-provider-api</artifactId>
-            <version>1.0-beta-6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-provider-test</artifactId>
-            <version>1.0-beta-6</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- From wagon -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-    <!-- From wagon -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-provider-api</artifactId>
-                <version>1.0-beta-6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-provider-test</artifactId>
-                <version>1.0-beta-6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh-common-test</artifactId>
-                <version>1.0-beta-6</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh-common</artifactId>
-                <version>1.0-beta-6</version>
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>3.8.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-interactivity-api</artifactId>
-                <version>1.0-alpha-6</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>plexus</groupId>
-                        <artifactId>plexus-utils</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.codehaus.plexus</groupId>
-                        <artifactId>plexus-container-default</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>classworlds</groupId>
-                        <artifactId>classworlds</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-container-default</artifactId>
-                <version>1.5.4</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>1.5.8</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.maven.scm</groupId>
+			<artifactId>maven-scm-api</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.scm</groupId>
+			<artifactId>maven-scm-manager-plexus</artifactId>
+			<version>1.3</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.scm</groupId>
+			<artifactId>maven-scm-test</artifactId>
+			<version>1.3</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.scm</groupId>
+			<artifactId>maven-scm-provider-gitexe</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.scm</groupId>
+			<artifactId>maven-scm-provider-git-commons</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<!-- From wagon-providers -->
+		<dependency>
+			<groupId>org.apache.maven.wagon</groupId>
+			<artifactId>wagon-provider-api</artifactId>
+			<version>1.0-beta-6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.wagon</groupId>
+			<artifactId>wagon-provider-test</artifactId>
+			<version>1.0-beta-6</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- From wagon -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<!-- From wagon -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-provider-api</artifactId>
+				<version>1.0-beta-6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-provider-test</artifactId>
+				<version>1.0-beta-6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-common-test</artifactId>
+				<version>1.0-beta-6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-common</artifactId>
+				<version>1.0-beta-6</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>3.8.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-interactivity-api</artifactId>
+				<version>1.0-alpha-6</version>
+				<exclusions>
+					<exclusion>
+						<groupId>plexus</groupId>
+						<artifactId>plexus-utils</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.codehaus.plexus</groupId>
+						<artifactId>plexus-container-default</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>classworlds</groupId>
+						<artifactId>classworlds</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-container-default</artifactId>
+				<version>1.5.4</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-utils</artifactId>
+				<version>1.5.8</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<distributionManagement>
 		<!-- Site to deploy releases to. -->
 		<repository>
@@ -300,12 +379,12 @@
 							<report>dependency-convergence</report>
 							<report>dependency-management</report>
 							<report>issue-tracking</report>
-                            <report>license</report>
+							<report>license</report>
 							<report>mailing-list</report>
 							<report>plugin-management</report>
 							<report>plugins</report>
-                            <report>summary</report>
-                            <report>project-team</report>
+							<report>summary</report>
+							<report>project-team</report>
 							<report>scm</report>
 						</reports>
 					</reportSet>
@@ -353,15 +432,15 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.6.1</version>
 				<configuration>
-                    <notimestamp>true</notimestamp>
-                    <archive>
-                        <manifest>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                        <manifestEntries>
-                            <Implementation-Classifier>javadoc</Implementation-Classifier>
-                        </manifestEntries>
-                    </archive>
+					<notimestamp>true</notimestamp>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+						<manifestEntries>
+							<Implementation-Classifier>javadoc</Implementation-Classifier>
+						</manifestEntries>
+					</archive>
 				</configuration>
 			</plugin>
 		</plugins>

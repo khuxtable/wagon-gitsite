@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Converted by db4-upgrade version 1.0 -->
+<article version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:ns5="http://www.w3.org/1999/xhtml"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/2000/svg"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <info>
+    <title>Introduction</title>
+
+    <author>
+      <personname><firstname>Kathryn</firstname><surname>Huxtable</surname></personname>
+
+      <affiliation>
+        <orgname>kathrynhuxtable.org</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2010-04-03</pubdate>
+  </info>
+
+  <section>
+    <info>
+      <title>Introduction</title>
+    </info>
+
+    <para>The wagon-gitsite is an implementation of Wagon provider for
+    deploying site documentation to <link
+    xlink:href="http://github.com">GitHub</link> as site documentation, using
+    GitHub's <link xlink:href="http://pages.github.com">pages</link>
+    system.</para>
+
+    <para>Essentially, if you have a top-level branch in your project called
+    "<code>gh-pages</code>", which you must create yourself before using this
+    wagon, you can deploy your site documentation to that branch and it will
+    be available via the URL</para>
+
+    <blockquote>
+      <para><uri>http://<replaceable>username</replaceable>.github.com/<replaceable>reponame</replaceable></uri></para>
+    </blockquote>
+
+    <para>where "<replaceable>username</replaceable>" is your GitHub username
+    and "<replaceable>reponame</replaceable>" is the name of your repository,
+    minus the "<filename>.git</filename>", e.g. if your username is
+    <literal>tomjones</literal> and your repository is
+    <filename>my-project.git</filename> the url would be</para>
+
+    <blockquote>
+      <para><uri>http://tomjones.github.com/my-project</uri></para>
+    </blockquote>
+
+    <section>
+      <info>
+        <title>Known Issues</title>
+      </info>
+
+      <itemizedlist>
+        <listitem>
+          <para>You must have previously created the
+          <literal>gh-pages</literal> branch in your GitHub repository
+          following the instructions at <link
+          xlink:href="http://pages.github.com">http://pages.github.com</link>.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+</article>
