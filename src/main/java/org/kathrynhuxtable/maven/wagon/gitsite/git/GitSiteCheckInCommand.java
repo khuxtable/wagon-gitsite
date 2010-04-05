@@ -179,6 +179,8 @@ public class GitSiteCheckInCommand extends AbstractCheckInCommand implements Git
         Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "commit");
 
         cl.createArg().setValue("--verbose");
+        
+        cl.createArg().setValue("--allow-empty");
 
         cl.createArg().setValue("-F");
 
