@@ -21,7 +21,6 @@
       @import url("./css/highlight.css");
     </style>
     <link rel="stylesheet" href="./css/print.css" type="text/css" media="print" />
-          <meta name="author" content="Kathryn Huxtable" />
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       </head>
   <body class="composite">
@@ -90,22 +89,8 @@
                     <a href="usage.html">Usage</a>
           </li>
           </ul>
-              <h5>Project Documentation</h5>
+              <h5>Project Information</h5>
             <ul>
-              
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  <li>
-              <strong>Project Information</strong>
-          <ul>
               
     <li>
                     <a href="dependencies.html">Dependencies</a>
@@ -147,23 +132,15 @@
                     <a href="source-repository.html">Source Repository</a>
           </li>
           </ul>
-    </li>
-              
-                  
-                  
-                  
-                  
-                  
-                  <li>
-              <strong>Project Reports</strong>
-          <ul>
+              <h5>Project Reports</h5>
+            <ul>
               
     <li>
                     <a href="cpd.html">CPD Report</a>
           </li>
               
     <li>
-                    <a href="apidocs/index.html">JavaDocs</a>
+                    <a class="newWindow" target="_New" href="apidocs/index.html">JavaDocs</a>
           </li>
               
     <li>
@@ -171,20 +148,67 @@
           </li>
               
     <li>
-                    <a href="xref/index.html">Source Xref</a>
+                    <a class="newWindow" target="_New" href="xref/index.html">Source Xref</a>
           </li>
               
     <li>
                     <a href="taglist.html">Tag List</a>
           </li>
           </ul>
-    </li>
-          </ul>
             </div>
     </div>
     <div id="bodyColumn">
       <div id="contentBox">
-        <div class="section"><h2>Maven Wagon GitSite<a name="Maven_Wagon_GitSite"></a></h2><p>This project is an implementation of Wagon provider for deploying site documentation to GitHub as site documentation, using GitHub's <a class="externalLink" href="http://pages.github.com">pages</a> system.</p><p>Essentially, if you have a top-level branch in your project called &quot;gh-pages&quot;, which you must create yourself before using this wagon, you can deploy your site documentation to that branch and it will be available via the URL</p><div><pre>http://username.github.com/reponame</pre></div><p>where &quot;username&quot; is your GitHub username and &quot;reponame&quot; is the name of your repository, minus the <tt>.git</tt>, e.g. if your username is <tt>tomjones</tt> and your repository is <tt>my-project.git</tt> the url would be</p><div><pre>http://tomjones.github.com/my-project</pre></div></div><div class="section"><h2>Known issues<a name="Known_issues"></a></h2><ul><li>If there are no changes in the site documentation between the version on GitHub, the deploy will fail. This is actually an issue in maven-scm-provider-gitexe.</li><li>You must have previously created the gh-pages branch in your GitHub repository following the instructions at <a class="externalLink" href="http://pages.github.com">http://pages.github.com</a>.</li></ul></div>
+        <div xmlns="http://www.w3.org/1999/xhtml" class="article" title="Introduction">
+  <div class="section" title="Introduction">
+    <div class="titlepage">
+      <div>
+        <div>
+          <h1 class="title"><a id="d14e17" shape="rect"></a>Introduction</h1>
+        </div>
+      </div>
+    </div>
+    <p>The wagon-gitsite is an implementation of Wagon provider for
+    deploying site documentation to <a class="link" href="http://github.com" target="_top" shape="rect">GitHub</a> as site documentation, using
+    GitHub's <a class="link" href="http://pages.github.com" target="_top" shape="rect">pages</a>
+    system.</p>
+    <p>Essentially, if you have a top-level branch in your project called
+    "<code class="code">gh-pages</code>", which you must create yourself before using this
+    wagon, you can deploy your site documentation to that branch and it will
+    be available via the URL</p>
+    <div class="blockquote">
+      <blockquote class="blockquote">
+        <p><code class="uri">http://<em class="replaceable"><code>username</code></em>.github.com/<em class="replaceable"><code>reponame</code></em></code></p>
+      </blockquote>
+    </div>
+    <p>where "<em class="replaceable"><code>username</code></em>" is your GitHub username
+    and "<em class="replaceable"><code>reponame</code></em>" is the name of your repository,
+    minus the "<code class="filename">.git</code>", e.g. if your username is
+    <code class="literal">tomjones</code> and your repository is
+    <code class="filename">my-project.git</code> the url would be</p>
+    <div class="blockquote">
+      <blockquote class="blockquote">
+        <p><code class="uri">http://tomjones.github.com/my-project</code></p>
+      </blockquote>
+    </div>
+    <div class="section" title="Known Issues">
+      <div class="titlepage">
+        <div>
+          <div>
+            <h1 class="title"><a id="d14e64" shape="rect"></a>Known Issues</h1>
+          </div>
+        </div>
+      </div>
+      <div class="itemizedlist">
+        <ul class="itemizedlist" type="disc">
+          <li class="listitem"><p>You must have previously created the
+          <code class="literal">gh-pages</code> branch in your GitHub repository
+          following the instructions at <a class="link" href="http://pages.github.com" target="_top" shape="rect">http://pages.github.com</a>.</p></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
       </div>
     </div>
     <div class="clear">
