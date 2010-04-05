@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<pmd version="4.2.2" timestamp="2010-04-05T14:21:03.133">
-<file name="/Users/huxtable/Documents/workspace/wagon-gitsite/target/checkout/src/main/java/org/kathrynhuxtable/maven/wagon/gitsite/git/GitSiteCheckInCommand.java">
+<pmd version="4.2.2" timestamp="2010-04-05T15:53:17.403">
+<file name="/Users/huxtable/Documents/workspace/wagon-gitsite/src/main/java/org/kathrynhuxtable/maven/wagon/gitsite/git/GitSiteCheckInCommand.java">
 <violation beginline="100" endline="103" begincolumn="17" endcolumn="17" rule="CollapsibleIfStatements" ruleset="Basic Rules" package="org.kathrynhuxtable.maven.wagon.gitsite.git" class="GitSiteCheckInCommand" method="executeCheckInCommand" externalInfoUrl="http://pmd.sourceforge.net/rules/basic.html#CollapsibleIfStatements" priority="3">
 These nested if statements could be combined
 </violation>
