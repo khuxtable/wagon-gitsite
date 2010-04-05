@@ -32,34 +32,23 @@ import org.apache.maven.scm.provider.git.gitexe.command.list.GitListConsumer;
 import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
 
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 
 /**
- * DOCUMENT ME!
+ * Handle git check-out and pull from remote site.
  *
- * @author  <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
- * @version $Id: GitSiteCheckOutCommand.java 823147 2009-10-08 12:39:23Z struberg $
+ * <p>Based on GitCheckOutCommand by Mark Struberg.</p>
+ *
+ * @author Kathryn Huxtable
+ * @see    org.apache.maven.scm.provider.git.gitexe.command.checkout.GitCheckOutCommand
  */
 public class GitSiteCheckOutCommand extends AbstractCheckOutCommand implements GitCommand {
 
     /**
-     * For git, the given repository is a remote one. We have to clone it first
-     * if the working directory does not contain a git repo yet, otherwise we
-     * have to git-pull it.
-     *
-     * <p>TODO We currently assume a '.git' directory, so this does not work for
-     * --bare repos {@inheritDoc}</p>
-     *
-     * @param  repo      DOCUMENT ME!
-     * @param  fileSet   DOCUMENT ME!
-     * @param  version   DOCUMENT ME!
-     * @param  recursive DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     *
-     * @throws ScmException DOCUMENT ME!
+     * @see org.apache.maven.scm.command.checkout.AbstractCheckOutCommand#executeCheckOutCommand(org.apache.maven.scm.provider.ScmProviderRepository,
+     *      org.apache.maven.scm.ScmFileSet, org.apache.maven.scm.ScmVersion,
+     *      boolean)
      */
     protected CheckOutScmResult executeCheckOutCommand(ScmProviderRepository repo, ScmFileSet fileSet, ScmVersion version,
             boolean recursive) throws ScmException {
@@ -75,6 +64,7 @@ public class GitSiteCheckOutCommand extends AbstractCheckOutCommand implements G
         CommandLineUtils.StringStreamConsumer stdout = new CommandLineUtils.StringStreamConsumer();
         CommandLineUtils.StringStreamConsumer stderr = new CommandLineUtils.StringStreamConsumer();
 
+        // Create or empty the working directory.
         if (!fileSet.getBasedir().exists()) {
             if (!fileSet.getBasedir().mkdir()) {
                 return new CheckOutScmResult("make directory", "The directory create failed.", "", false);
@@ -89,90 +79,61 @@ public class GitSiteCheckOutCommand extends AbstractCheckOutCommand implements G
 
         Commandline cl = null;
 
-        // Initialize a new repo.
-        cl       = createInitCommand(repository, fileSet.getBasedir());
+        // Initialize a new git repo.
+        cl       = createInitCommand(fileSet.getBasedir());
         exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
-        if (exitCode != 0) {
+        if (exitCode != 0 || !new File(fileSet.getBasedir(), ".git").exists()) {
             return new CheckOutScmResult(cl.toString(), "The git-init command failed.", stderr.getOutput(), false);
         }
 
-        // Add the remote origin to the repo.
-        if (fileSet.getBasedir().exists() && new File(fileSet.getBasedir(), ".git").exists()) {
-            cl       = createRemoteAddOriginCommand(repository, fileSet.getBasedir());
-            exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
-            if (exitCode != 0) {
-                return new CheckOutScmResult(cl.toString(), "The git-remote command failed.", stderr.getOutput(), false);
-            }
+        // Add the remote origin to the git repo.
+        cl       = createRemoteAddOriginCommand(fileSet.getBasedir(), repository);
+        exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
+        if (exitCode != 0) {
+            return new CheckOutScmResult(cl.toString(), "The git-remote command failed.", stderr.getOutput(), false);
         }
 
-        if (fileSet.getBasedir().exists() && new File(fileSet.getBasedir(), ".git").exists()) {
-            // pull the site branch into master, which checks it out.
-            cl = createPullCommand(repository, fileSet.getBasedir(), version);
-
-            exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
-            if (exitCode != 0) {
-                return new CheckOutScmResult(cl.toString(), "The git-pull command failed.", stderr.getOutput(), false);
-            }
+        // Pull the site branch into master, which checks it out.
+        cl       = createPullCommand(fileSet.getBasedir(), version);
+        exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
+        if (exitCode != 0) {
+            return new CheckOutScmResult(cl.toString(), "The git-pull command failed.", stderr.getOutput(), false);
         }
 
-        // and now search for the files
+        // And now search for the files.
         GitListConsumer listConsumer = new GitListConsumer(getLogger(), fileSet.getBasedir(), ScmFileStatus.CHECKED_IN);
 
-        Commandline clList = GitListCommand.createCommandLine(repository, fileSet.getBasedir());
-
-        exitCode = GitCommandLineUtils.execute(clList, listConsumer, stderr, getLogger());
+        cl       = GitListCommand.createCommandLine(repository, fileSet.getBasedir());
+        exitCode = GitCommandLineUtils.execute(cl, listConsumer, stderr, getLogger());
         if (exitCode != 0) {
-            return new CheckOutScmResult(clList.toString(), "The git-ls-files command failed.", stderr.getOutput(), false);
+            return new CheckOutScmResult(cl.toString(), "The git-ls-files command failed.", stderr.getOutput(), false);
         }
 
         return new CheckOutScmResult(cl.toString(), listConsumer.getListedFiles());
     }
 
     /**
-     * ----------------------------------------------------------------------
-     * ----------------------------------------------------------------------
+     * Create a "git init" command.
      *
-     * @param  repository       DOCUMENT ME!
-     * @param  workingDirectory DOCUMENT ME!
-     * @param  version          DOCUMENT ME!
+     * @param  workingDirectory the working directory.
      *
-     * @return DOCUMENT ME!
+     * @return the command line to init the local repository.
      */
-    public static Commandline createCommandLine(GitScmProviderRepository repository, File workingDirectory, ScmVersion version) {
-        Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(workingDirectory, "checkout");
-
-        if (version != null && StringUtils.isNotEmpty(version.getName())) {
-            cl.createArg().setValue(version.getName());
-        }
-
-        return cl;
-    }
-
-    /**
-     * create a git-init repository command
-     *
-     * @param  repository       DOCUMENT ME!
-     * @param  workingDirectory DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     */
-    private Commandline createInitCommand(GitScmProviderRepository repository, File workingDirectory) {
+    private Commandline createInitCommand(File workingDirectory) {
         Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(workingDirectory, "init");
 
         return cl;
     }
 
     /**
-     * create a git-remote add origin command
+     * Create a "git remote add origin" command.
      *
-     * <p>git remote add origin ${gitRepoUrl}</p>
+     * @param  workingDirectory the working directory.
+     * @param  repository       the SCM repository.
      *
-     * @param  repository       DOCUMENT ME!
-     * @param  workingDirectory DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
+     * @return the command line to add the remote origin.
      */
-    private Commandline createRemoteAddOriginCommand(GitScmProviderRepository repository, File workingDirectory) {
+    private Commandline createRemoteAddOriginCommand(File workingDirectory, GitScmProviderRepository repository) {
         Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(workingDirectory, "remote");
 
         cl.createArg().setValue("add");
@@ -184,17 +145,15 @@ public class GitSiteCheckOutCommand extends AbstractCheckOutCommand implements G
     }
 
     /**
-     * create a git-pull repository command
+     * Create a "git pull origin refs/heads/branch" command.
      *
-     * <p>git pull origin refs/heads/version</p>
+     * @param  workingDirectory the working directory.
+     * @param  version          the remote site branch to check out.
      *
-     * @param  repository       DOCUMENT ME!
-     * @param  workingDirectory DOCUMENT ME!
-     * @param  version          DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
+     * @return the command line to pull the site branch into the working
+     *         directory.
      */
-    private Commandline createPullCommand(GitScmProviderRepository repository, File workingDirectory, ScmVersion version) {
+    private Commandline createPullCommand(File workingDirectory, ScmVersion version) {
         Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(workingDirectory, "pull");
 
         cl.createArg().setValue("origin");

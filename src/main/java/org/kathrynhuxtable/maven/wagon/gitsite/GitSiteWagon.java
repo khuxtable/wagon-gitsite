@@ -12,8 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * $$Id$$
  */
 package org.kathrynhuxtable.maven.wagon.gitsite;
 
@@ -92,7 +90,6 @@ import org.kathrynhuxtable.maven.wagon.gitsite.git.GitSiteCheckOutCommand;
  * @author           <a href="evenisse@apache.org">Emmanuel Venisse</a>
  * @author           <a href="carlos@apache.org">Carlos Sanchez</a>
  * @author           Jason van Zyl
- * @version          $Id: GitSiteWagon.java 894435 2009-12-29 16:38:38Z bentmann $
  */
 public class GitSiteWagon extends AbstractWagon {
 
@@ -106,31 +103,50 @@ public class GitSiteWagon extends AbstractWagon {
     /** The site branch. Set in connect. */
     private String siteBranch;
 
+    /** The check-out directory. */
     private File checkoutDirectory;
 
     /**
-     * Get the {@link ScmManager} used in this Wagon
+     * Get the {@link ScmManager} used in this Wagon.
      *
-     * @return the {@link ScmManager}
+     * @return the {@link ScmManager}.
      */
     public ScmManager getScmManager() {
         return scmManager;
     }
 
     /**
-     * Set the {@link ScmManager} used in this Wagon
+     * Set the {@link ScmManager} used in this Wagon.
      *
-     * @param scmManager
+     * @param scmManager the scmManager to set.
      */
     public void setScmManager(ScmManager scmManager) {
         this.scmManager = scmManager;
     }
 
     /**
+     * Get the {@link siteBranch} used in this Wagon.
+     *
+     * @return the {@link siteBranch}.
+     */
+    public String getSiteBranch() {
+        return siteBranch;
+    }
+
+    /**
+     * Set the {@link siteBranch} used in this Wagon.
+     *
+     * @param siteBranch the siteBranch to set.
+     */
+    public void setSiteBranch(String siteBranch) {
+        this.siteBranch = siteBranch;
+    }
+
+    /**
      * Get the directory where Wagon will checkout files from SCM. This
      * directory will be deleted!
      *
-     * @return directory
+     * @return the {@link checkoutDirectory}.
      */
     public File getCheckoutDirectory() {
         return checkoutDirectory;
@@ -140,7 +156,7 @@ public class GitSiteWagon extends AbstractWagon {
      * Set the directory where Wagon will checkout files from SCM. This
      * directory will be deleted!
      *
-     * @param checkoutDirectory
+     * @param checkoutDirectory the check-out directory to set.
      */
     public void setCheckoutDirectory(File checkoutDirectory) {
         this.checkoutDirectory = checkoutDirectory;
@@ -148,21 +164,21 @@ public class GitSiteWagon extends AbstractWagon {
 
     /**
      * Convenience method to get the {@link ScmProvider} implementation to
-     * handle the provided SCM type
+     * handle the provided SCM type.
      *
      * @param  scmType type of SCM, eg. <code>svn</code>, <code>cvs</code>
      *
-     * @return the {@link ScmProvider} that will handle provided SCM type
+     * @return the {@link ScmProvider} that will handle provided SCM type.
      *
      * @throws NoSuchScmProviderException if there is no {@link ScmProvider}
-     *                                    able to handle that SCM type
+     *                                    able to handle that SCM type.
      */
     public ScmProvider getScmProvider(String scmType) throws NoSuchScmProviderException {
         return getScmManager().getProviderByType(scmType);
     }
 
     /**
-     * This will cleanup the checkout directory
+     * This will clean up the checkout directory.
      *
      * @throws ConnectionException
      */
@@ -275,82 +291,11 @@ public class GitSiteWagon extends AbstractWagon {
     }
 
     /**
-     * Puts both files and directories
+     * Configure and perform the check-in process.
      *
-     * @param  source     the source files to add.
-     * @param  targetName the target name (usually ".").
-     *
-     * @throws TransferFailedException if the transfer fails.
-     */
-    private void putInternal(File source, String targetName) throws TransferFailedException {
-        Resource target = new Resource(targetName);
-
-        firePutInitiated(target, source);
-
-        try {
-            ScmRepository scmRepository = getScmRepository(getRepository().getUrl());
-
-            target.setContentLength(source.length());
-            target.setLastModified(source.lastModified());
-
-            firePutStarted(target, source);
-
-            String msg = "Wagon: Deploying " + source.getName() + " to repository";
-
-            ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
-
-            String checkoutTargetName = source.isDirectory() ? targetName : getDirname(targetName);
-            String relPath            = checkOut(scmProvider, scmRepository, checkoutTargetName, target);
-
-            File newCheckoutDirectory = new File(checkoutDirectory, relPath);
-
-            File scmFile = new File(newCheckoutDirectory, source.isDirectory() ? "" : getFilename(targetName));
-
-            boolean fileAlreadyInScm = scmFile.exists();
-
-            if (!scmFile.equals(source)) {
-                if (source.isDirectory()) {
-                    FileUtils.copyDirectoryStructure(source, scmFile);
-                } else {
-                    FileUtils.copyFile(source, scmFile);
-                }
-            }
-
-            if (!fileAlreadyInScm || scmFile.isDirectory()) {
-                int addedFiles = addFiles(scmProvider, scmRepository, newCheckoutDirectory,
-                                          source.isDirectory() ? "" : scmFile.getName());
-
-                if (!fileAlreadyInScm && addedFiles == 0) {
-                    throw new ScmException("Unable to add file to SCM: " + scmFile + "; see error messages above for more information");
-                }
-            }
-
-            checkIn(scmProvider, scmRepository, msg);
-        } catch (ScmException e) {
-            e.printStackTrace();
-            fireTransferError(target, e, TransferEvent.REQUEST_GET);
-
-            System.exit(1);
-            throw new TransferFailedException("Error interacting with SCM: " + e.getMessage(), e);
-        } catch (IOException e) {
-            fireTransferError(target, e, TransferEvent.REQUEST_GET);
-
-            throw new TransferFailedException("Error interacting with SCM: " + e.getMessage(), e);
-        }
-
-        if (source.isFile()) {
-            postProcessListeners(target, source, TransferEvent.REQUEST_PUT);
-        }
-
-        firePutCompleted(target, source);
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param  scmProvider
-     * @param  scmRepository
-     * @param  msg
+     * @param  scmProvider   the SCM provider.
+     * @param  scmRepository the SCM repository.
+     * @param  msg           the commit message.
      *
      * @throws ScmException
      */
@@ -369,15 +314,17 @@ public class GitSiteWagon extends AbstractWagon {
     }
 
     /**
-     * Returns the relative path to targetName in the checkout dir. If the
-     * targetName already exists in the scm, this will be the empty string.
+     * Configure and perform the check-out process.
      *
-     * @param  scmProvider
-     * @param  scmRepository
-     * @param  targetName
-     * @param  resource
+     * <p>Returns the relative path to targetName in the checkout dir. If the
+     * targetName already exists in the scm, this will be the empty string.</p>
      *
-     * @return
+     * @param  scmProvider   the SCM provider.
+     * @param  scmRepository the SCM repository.
+     * @param  targetName    the check-out directory.
+     * @param  resource      the resource.
+     *
+     * @return the relative path to targetName in the check-out directory.
      *
      * @throws TransferFailedException
      */
@@ -389,7 +336,7 @@ public class GitSiteWagon extends AbstractWagon {
 
         String target = targetName;
 
-        // totally ignore scmRepository parent stuff since that is not supported by all scms.
+        // Totally ignore scmRepository parent stuff since that is not supported by all SCMs.
         // Instead, assume that that url exists. If not, then that's an error.
         // Check whether targetName, which is a relative path into the scm, exists.
         // If it doesn't, check the parent, etc.
@@ -516,7 +463,9 @@ public class GitSiteWagon extends AbstractWagon {
     /**
      * Return whether or not this wagon supports directory copy.
      *
-     * @return true
+     * @return {@code true}
+     *
+     * @see    org.apache.maven.wagon.AbstractWagon#supportsDirectoryCopy()
      */
     public boolean supportsDirectoryCopy() {
         return true;
@@ -553,7 +502,7 @@ public class GitSiteWagon extends AbstractWagon {
      * @see org.apache.maven.wagon.Wagon#put(java.io.File, java.lang.String)
      */
     public void put(File source, String destination) throws TransferFailedException {
-        throw new TransferFailedException("method Wagon.put(...) is not implemented");
+        throw new TransferFailedException("Not currently supported: put");
     }
 
     /**
@@ -565,13 +514,72 @@ public class GitSiteWagon extends AbstractWagon {
             throw new IllegalArgumentException("Source is not a directory: " + sourceDirectory);
         }
 
-        putInternal(sourceDirectory, destinationDirectory);
+        Resource target = new Resource(destinationDirectory);
+
+        firePutInitiated(target, sourceDirectory);
+
+        try {
+            ScmRepository scmRepository = getScmRepository(getRepository().getUrl());
+
+            target.setContentLength(sourceDirectory.length());
+            target.setLastModified(sourceDirectory.lastModified());
+
+            firePutStarted(target, sourceDirectory);
+
+            String msg = "Wagon: Deploying " + sourceDirectory.getName() + " to repository";
+
+            ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
+
+            String checkoutTargetName = sourceDirectory.isDirectory() ? destinationDirectory : getDirname(destinationDirectory);
+            String relPath            = checkOut(scmProvider, scmRepository, checkoutTargetName, target);
+
+            File newCheckoutDirectory = new File(checkoutDirectory, relPath);
+
+            File scmFile = new File(newCheckoutDirectory, sourceDirectory.isDirectory() ? "" : getFilename(destinationDirectory));
+
+            boolean fileAlreadyInScm = scmFile.exists();
+
+            if (!scmFile.equals(sourceDirectory)) {
+                if (sourceDirectory.isDirectory()) {
+                    FileUtils.copyDirectoryStructure(sourceDirectory, scmFile);
+                } else {
+                    FileUtils.copyFile(sourceDirectory, scmFile);
+                }
+            }
+
+            if (!fileAlreadyInScm || scmFile.isDirectory()) {
+                int addedFiles = addFiles(scmProvider, scmRepository, newCheckoutDirectory,
+                                          sourceDirectory.isDirectory() ? "" : scmFile.getName());
+
+                if (!fileAlreadyInScm && addedFiles == 0) {
+                    throw new ScmException("Unable to add file to SCM: " + scmFile + "; see error messages above for more information");
+                }
+            }
+
+            checkIn(scmProvider, scmRepository, msg);
+        } catch (ScmException e) {
+            e.printStackTrace();
+            fireTransferError(target, e, TransferEvent.REQUEST_GET);
+
+            System.exit(1);
+            throw new TransferFailedException("Error interacting with SCM: " + e.getMessage(), e);
+        } catch (IOException e) {
+            fireTransferError(target, e, TransferEvent.REQUEST_GET);
+
+            throw new TransferFailedException("Error interacting with SCM: " + e.getMessage(), e);
+        }
+
+        if (sourceDirectory.isFile()) {
+            postProcessListeners(target, sourceDirectory, TransferEvent.REQUEST_PUT);
+        }
+
+        firePutCompleted(target, sourceDirectory);
     }
 
     /**
      * Check that the ScmResult was a successful operation
      *
-     * @param  result
+     * @param  result the SCM result.
      *
      * @throws ScmException
      */
@@ -590,17 +598,8 @@ public class GitSiteWagon extends AbstractWagon {
     }
 
     /**
-     * Not implemented
-     *
-     * @param  resourceName
-     * @param  destination
-     * @param  timestamp
-     *
-     * @return
-     *
-     * @throws TransferFailedException
-     * @throws ResourceDoesNotExistException
-     * @throws AuthorizationException        always.
+     * @see org.apache.maven.wagon.Wagon#getIfNewer(java.lang.String,java.io.File,
+     *      long)
      */
     public boolean getIfNewer(String resourceName, File destination, long timestamp) throws TransferFailedException,
         ResourceDoesNotExistException, AuthorizationException {
@@ -612,64 +611,7 @@ public class GitSiteWagon extends AbstractWagon {
      */
     public void get(String resourceName, File destination) throws TransferFailedException, ResourceDoesNotExistException,
         AuthorizationException {
-        Resource resource = new Resource(resourceName);
-
-        fireGetInitiated(resource, destination);
-
-        String url = getRepository().getUrl() + "/" + resourceName;
-
-        // remove the file
-        url = url.substring(0, url.lastIndexOf('/'));
-
-        try {
-            ScmRepository scmRepository = getScmRepository(url);
-
-            fireGetStarted(resource, destination);
-
-            // TODO: limitations:
-            // - destination filename must match that in the repository - should allow the "-d" CVS equiv to be passed
-            // in
-            // - we don't get granular exceptions from SCM (ie, auth, not found)
-            // - need to make it non-recursive to save time
-            // - exists() check doesn't test if it is in SCM already
-
-            File scmFile = new File(checkoutDirectory, resourceName);
-
-            File basedir = scmFile.getParentFile();
-
-            ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
-
-            String reservedScmFile = scmProvider.getScmSpecificFilename();
-
-            if (reservedScmFile != null && new File(basedir, reservedScmFile).exists()) {
-                scmProvider.update(scmRepository, new ScmFileSet(basedir), (ScmVersion) null);
-            } else {
-                // TODO: this should be checking out a full hierarchy (requires the -d equiv)
-                basedir.mkdirs();
-
-                scmProvider.checkOut(scmRepository, new ScmFileSet(basedir), (ScmVersion) null);
-            }
-
-            if (!scmFile.exists()) {
-                throw new ResourceDoesNotExistException("Unable to find resource " + destination + " after checkout");
-            }
-
-            if (!scmFile.equals(destination)) {
-                FileUtils.copyFile(scmFile, destination);
-            }
-        } catch (ScmException e) {
-            fireTransferError(resource, e, TransferEvent.REQUEST_GET);
-
-            throw new TransferFailedException("Error getting file from SCM", e);
-        } catch (IOException e) {
-            fireTransferError(resource, e, TransferEvent.REQUEST_GET);
-
-            throw new TransferFailedException("Error getting file from SCM", e);
-        }
-
-        postProcessListeners(resource, destination, TransferEvent.REQUEST_GET);
-
-        fireGetCompleted(resource, destination);
+        throw new UnsupportedOperationException("Not currently supported: get");
     }
 
     /**
@@ -690,17 +632,14 @@ public class GitSiteWagon extends AbstractWagon {
         AuthorizationException {
         try {
             ScmRepository repository = getScmRepository(getRepository().getUrl());
-
-            ScmProvider provider = getScmProvider(repository.getProvider());
-
-            ListScmResult result = provider.list(repository,
-                                                 new ScmFileSet(new File("."), new File(resourcePath)), false, (ScmVersion) null);
+            ScmProvider   provider   = getScmProvider(repository.getProvider());
+            ListScmResult result     = provider.list(repository,
+                                                     new ScmFileSet(new File("."), new File(resourcePath)), false, (ScmVersion) null);
 
             if (!result.isSuccess()) {
                 throw new ResourceDoesNotExistException(result.getProviderMessage());
             }
 
-            // List<String>
             List<String> files = new ArrayList<String>();
 
             for (ScmFile f : getListScmResultFiles(result)) {
@@ -715,7 +654,8 @@ public class GitSiteWagon extends AbstractWagon {
     }
 
     /**
-     * Famulus to listScmResult.getFiles().
+     * Wrapper around listScmResult.getFiles() to avoid having a larger method
+     * needing the suppressWarnings attribute.
      *
      * @param  result the ListScmResult.
      *
@@ -732,7 +672,6 @@ public class GitSiteWagon extends AbstractWagon {
     public boolean resourceExists(String resourceName) throws TransferFailedException, AuthorizationException {
         try {
             getFileList(resourceName);
-
             return true;
         } catch (ResourceDoesNotExistException e) {
             return false;
@@ -766,17 +705,17 @@ public class GitSiteWagon extends AbstractWagon {
     }
 
     /**
-     * DOCUMENT ME!
+     * Wrapper around gitCommand.execute to handle setting the logger.
      *
-     * @param  scmProvider DOCUMENT ME!
-     * @param  command     DOCUMENT ME!
-     * @param  repository  DOCUMENT ME!
-     * @param  fileSet     DOCUMENT ME!
-     * @param  parameters  DOCUMENT ME!
+     * @param  scmProvider the SCM provider.
+     * @param  command     the command.
+     * @param  repository  the SCM repository.
+     * @param  fileSet     the file set.
+     * @param  parameters  any parameters to the command.
      *
-     * @return DOCUMENT ME!
+     * @return the SCM result.
      *
-     * @throws ScmException DOCUMENT ME!
+     * @throws ScmException
      */
     protected ScmResult executeCommand(GitExeScmProvider scmProvider, GitCommand command, ScmProviderRepository repository,
             ScmFileSet fileSet, CommandParameters parameters) throws ScmException {

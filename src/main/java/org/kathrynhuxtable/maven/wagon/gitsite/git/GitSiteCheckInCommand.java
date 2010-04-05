@@ -29,12 +29,10 @@ import org.apache.maven.scm.ScmFileStatus;
 import org.apache.maven.scm.ScmVersion;
 import org.apache.maven.scm.command.checkin.AbstractCheckInCommand;
 import org.apache.maven.scm.command.checkin.CheckInScmResult;
-import org.apache.maven.scm.log.ScmLogger;
 import org.apache.maven.scm.provider.ScmProviderRepository;
 import org.apache.maven.scm.provider.git.command.GitCommand;
 import org.apache.maven.scm.provider.git.gitexe.command.GitCommandLineUtils;
 import org.apache.maven.scm.provider.git.gitexe.command.add.GitAddCommand;
-import org.apache.maven.scm.provider.git.gitexe.command.branch.GitBranchCommand;
 import org.apache.maven.scm.provider.git.gitexe.command.status.GitStatusCommand;
 import org.apache.maven.scm.provider.git.gitexe.command.status.GitStatusConsumer;
 import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
@@ -45,15 +43,19 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 
 /**
- * DOCUMENT ME!
+ * Handle git check-in and push to remote site.
  *
- * @author  <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
- * @version $Id: GitSiteCheckInCommand.java 823147 2009-10-08 12:39:23Z struberg $
+ * <p>Based on GitCheckInCommand by Mark Struberg.</p>
+ *
+ * @author Kathryn Huxtable
+ * @see    org.apache.maven.scm.provider.git.gitexe.command.checkin.GitCheckInCommand
  */
 public class GitSiteCheckInCommand extends AbstractCheckInCommand implements GitCommand {
 
     /**
-     * {@inheritDoc}
+     * @see org.apache.maven.scm.command.checkin.AbstractCheckInCommand#executeCheckInCommand(org.apache.maven.scm.provider.ScmProviderRepository,
+     *      org.apache.maven.scm.ScmFileSet, java.lang.String,
+     *      org.apache.maven.scm.ScmVersion)
      */
     protected CheckInScmResult executeCheckInCommand(ScmProviderRepository repo, ScmFileSet fileSet, String message, ScmVersion version)
         throws ScmException {
@@ -74,60 +76,56 @@ public class GitSiteCheckInCommand extends AbstractCheckInCommand implements Git
         }
 
         try {
+            Commandline cl = null;
+
             if (!fileSet.getFileList().isEmpty()) {
-                // if specific fileSet is given, we have to git-add them first
-                // otherwise we will use 'git-commit -a' later
-
-                Commandline clAdd = GitAddCommand.createCommandLine(fileSet.getBasedir(), fileSet.getFileList());
-
-                exitCode = GitCommandLineUtils.execute(clAdd, stdout, stderr, getLogger());
-
+                // If specific fileSet is given, we have to git-add them first,
+                // otherwise we will use 'git-commit -a' later.
+                cl       = GitAddCommand.createCommandLine(fileSet.getBasedir(), fileSet.getFileList());
+                exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
                 if (exitCode != 0) {
-                    return new CheckInScmResult(clAdd.toString(), "The git-add command failed.", stderr.getOutput(), false);
+                    return new CheckInScmResult(cl.toString(), "The git-add command failed.", stderr.getOutput(), false);
                 }
             }
 
-            // git-commit doesn't show single files, but only summary :/
+            // The git-commit command doesn't show single files, but only summary :/
             // so we must run git-status and consume the output.
-            // borrow a few things from the git-status command.
-            Commandline clStatus = GitStatusCommand.createCommandLine(repository, fileSet);
-
+            // Borrow a few things from the git-status command.
             GitStatusConsumer statusConsumer = new GitStatusConsumer(getLogger(), fileSet.getBasedir());
 
-            exitCode = GitCommandLineUtils.execute(clStatus, statusConsumer, stderr, getLogger());
+            cl       = GitStatusCommand.createCommandLine(repository, fileSet);
+            exitCode = GitCommandLineUtils.execute(cl, statusConsumer, stderr, getLogger());
             if (exitCode != 0) {
-                // git-status returns non-zero if nothing to do
+                // git-status returns non-zero if nothing to do.
                 if (getLogger().isInfoEnabled()) {
                     getLogger().info("nothing added to commit but untracked files present (use \"git add\" to "
                                      + "track)");
                 }
             }
 
-            Commandline clCommit = createCommitCommandLine(repository, fileSet, messageFile);
-
-            exitCode = GitCommandLineUtils.execute(clCommit, stdout, stderr, getLogger());
+            cl       = createCommitCommandLine(fileSet, messageFile);
+            exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
             if (exitCode != 0) {
-                return new CheckInScmResult(clCommit.toString(), "The git-commit command failed.", stderr.getOutput(), false);
+                return new CheckInScmResult(cl.toString(), "The git-commit command failed.", stderr.getOutput(), false);
             }
 
-            Commandline cl = createPushCommandLine(getLogger(), repository, fileSet, version);
-
+            cl       = createPushCommandLine(fileSet, repository, version);
             exitCode = GitCommandLineUtils.execute(cl, stdout, stderr, getLogger());
             if (exitCode != 0) {
                 return new CheckInScmResult(cl.toString(), "The git-push command failed.", stderr.getOutput(), false);
             }
 
-            List checkedInFiles = new ArrayList(statusConsumer.getChangedFiles().size());
+            List<ScmFile> checkedInFiles = new ArrayList<ScmFile>(statusConsumer.getChangedFiles().size());
 
             // rewrite all detected files to now have status 'checked_in'
-            for (Iterator it = statusConsumer.getChangedFiles().iterator(); it.hasNext();) {
-                ScmFile scmfile = new ScmFile(((ScmFile) it.next()).getPath(), ScmFileStatus.CHECKED_IN);
+            for (Object foo : statusConsumer.getChangedFiles()) {
+                ScmFile scmfile = new ScmFile(((ScmFile) foo).getPath(), ScmFileStatus.CHECKED_IN);
 
                 if (fileSet.getFileList().isEmpty()) {
                     checkedInFiles.add(scmfile);
                 } else {
-                    // if a specific fileSet is given, we have to check if the file is really tracked
-                    for (Iterator itfl = fileSet.getFileList().iterator(); itfl.hasNext();) {
+                    // If a specific fileSet is given, we have to check if the file is really tracked.
+                    for (Iterator<?> itfl = fileSet.getFileList().iterator(); itfl.hasNext();) {
                         File f = (File) itfl.next();
 
                         if (f.toString().equals(scmfile.getPath())) {
@@ -148,53 +146,20 @@ public class GitSiteCheckInCommand extends AbstractCheckInCommand implements Git
     }
 
     /**
-     * Create the push command.
+     * Create the "git commit" command line.
      *
-     * <p>git push origin master:${siteBranch}</p>
+     * @param  fileSet     the file set to commit.
+     * @param  messageFile the file containing the commit message.
      *
-     * @param  logger     DOCUMENT ME!
-     * @param  repository DOCUMENT ME!
-     * @param  fileSet    DOCUMENT ME!
-     * @param  version    DOCUMENT ME!
+     * @return the command line to commit the changes.
      *
-     * @return DOCUMENT ME!
-     *
-     * @throws ScmException DOCUMENT ME!
+     * @throws ScmException if an error occurs.
      */
-    public static Commandline createPushCommandLine(ScmLogger logger, GitScmProviderRepository repository, ScmFileSet fileSet,
-            ScmVersion version) throws ScmException {
-        Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "push");
-
-        cl.createArg().setValue("origin");
-
-        String branch = GitBranchCommand.getCurrentBranch(logger, repository, fileSet);
-
-        if (branch == null || branch.length() == 0) {
-            throw new ScmException("Could not detect the current branch. Don't know where I should push to!");
-        }
-
-        cl.createArg().setValue(branch + ":" + version.getName());
-
-        return cl;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param  repository  DOCUMENT ME!
-     * @param  fileSet     DOCUMENT ME!
-     * @param  messageFile DOCUMENT ME!
-     *
-     * @return DOCUMENT ME!
-     *
-     * @throws ScmException DOCUMENT ME!
-     */
-    public static Commandline createCommitCommandLine(GitScmProviderRepository repository, ScmFileSet fileSet, File messageFile)
-        throws ScmException {
+    private Commandline createCommitCommandLine(ScmFileSet fileSet, File messageFile) throws ScmException {
         Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "commit");
 
         cl.createArg().setValue("--verbose");
-        
+
         cl.createArg().setValue("--allow-empty");
 
         cl.createArg().setValue("-F");
@@ -216,4 +181,22 @@ public class GitSiteCheckInCommand extends AbstractCheckInCommand implements Git
         return cl;
     }
 
+    /**
+     * Create the "git push origin" command.
+     *
+     * @param  fileSet    the file set.
+     * @param  repository the SCM repository.
+     * @param  version    the site branch.
+     *
+     * @return the command line to push the changes to the site branch.
+     */
+    private Commandline createPushCommandLine(ScmFileSet fileSet, GitScmProviderRepository repository, ScmVersion version) {
+        Commandline cl = GitCommandLineUtils.getBaseGitCommandLine(fileSet.getBasedir(), "push");
+
+        cl.createArg().setValue("origin");
+
+        cl.createArg().setValue("master:" + version.getName());
+
+        return cl;
+    }
 }
