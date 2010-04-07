@@ -10,6 +10,11 @@
 		<name>Wagon GitSite</name>
 		<src>http://khuxtable.github.com/wagon-gitsite/images/logos/WagonGitSiteLogo.png</src>
 	</bannerRight>
+    <skin>
+        <groupId>org.kathrynhuxtable.maven.skins</groupId>
+        <artifactId>green-site-skin</artifactId>
+        <version>1.0</version>
+    </skin>
 	<body>
 		<links>
 			<item name="Kathryn Huxtable's Projects" href="http://www.kathrynhuxtable.org/blog/projects/" />
