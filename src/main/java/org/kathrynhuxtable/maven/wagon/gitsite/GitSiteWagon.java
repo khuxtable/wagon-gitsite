@@ -354,13 +354,29 @@ public class GitSiteWagon extends AbstractWagon {
             throw new TransferFailedException("Error listing repository: " + e.getMessage(), e);
         }
 
+        /* A URL for a module will look like: 
+         *   scm:git:ssh://github.com/auser/project.git/module
+         * so we strip the module to get just:
+         *   scm:git:ssh://github.com/auser/project.git
+         * to ensure a successful checkout, then adjust the relative path.
+         */
+        String url = getRepository().getUrl();
+        String relPath = "";
+        if (!url.endsWith(".git")) {
+            final int iGitSuffix = url.lastIndexOf(".git");
+            if (iGitSuffix > 0) {
+                relPath = url.substring(iGitSuffix + 5) + '/';
+                url = url.substring(0, iGitSuffix + 4);
+            }
+        }
+
         // ok, we've established that target exists, or is empty.
         // Check the resource out; if it doesn't exist, that means we're in the svn repo url root,
         // and the configuration is incorrect. We will not try repo.getParent since most scm's don't
         // implement that.
 
         try {
-            scmRepository = getScmRepository(getRepository().getUrl());
+            scmRepository = getScmRepository(url);
 
             CommandParameters parameters = new CommandParameters();
 
@@ -381,12 +397,10 @@ public class GitSiteWagon extends AbstractWagon {
 
         // now create the subdirs in target, if it's a parent of targetName
 
-        String relPath = "";
-
         while (!stack.isEmpty()) {
             String p = (String) stack.pop();
 
-            relPath += p + "/";
+            relPath += p + '/';
 
             File newDir = new File(checkoutDirectory, relPath);
 
