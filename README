@@ -1,6 +1,10 @@
-This is a fork of Kathryn Huxtable's gitsite wagon.
+This is Kathryn Huxtable's gitsite wagon.
 
-This fork adds support for multi-module projects.
+Code from Anthony Whitford <anthony@whitford.com> adds support for
+multi-module projects.
+
+Stephen Connolly <stephen.alan.connolly@gmail.com> made some changes to
+the documentation.
 
 Hopefully, the changes in this fork will be integrated into the original
 project.
