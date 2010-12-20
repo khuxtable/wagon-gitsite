@@ -14,7 +14,7 @@
 
 	<groupId>org.kathrynhuxtable.maven.wagon</groupId>
 	<artifactId>wagon-gitsite</artifactId>
-	<version>0.3-SNAPSHOT</version>
+	<version>0.3</version>
 	<name>Maven Wagon GitHub Pages Provider</name>
 	<description>
         Wagon for deploying site documentation to the gh-pages branch of a GitHub repository.
