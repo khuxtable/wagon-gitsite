@@ -64,7 +64,7 @@
   &lt;distributionManagement&gt;
     ...
     &lt;site&gt;
-      &lt;id&gt;my-project-site&lt;/id&gt;
+      &lt;id&gt;github-project-site&lt;/id&gt;
       &lt;url&gt;gitsite:git@github.com/tomjones/my-project.git&lt;/url&gt;
     &lt;/site&gt;
   &lt;/distributionManagement&gt;</programlisting>
@@ -76,6 +76,19 @@
 
       <para>will deploy the site to the <replaceable>my-branch</replaceable>
       branch instead of the <literal>gh-pages</literal> branch.</para>
+
+      <para>You might also need to add the following to your
+      <literal>~/.m2/settings.xml</literal></para>
+      <programlisting language="xml"><![CDATA[  ...
+  <servers>
+    ...
+    <server>
+      <id>github-project-site</id>
+      <username>git</username>
+    </server>
+    ...
+  </servers>
+  ...]]></programlisting>
     </section>
   </section>
 </article>
