@@ -14,7 +14,7 @@
 
 	<groupId>org.kathrynhuxtable.maven.wagon</groupId>
 	<artifactId>wagon-gitsite</artifactId>
-	<version>0.3.1</version>
+	<version>0.3.1-SNAPSHOT</version>
 	<name>Maven Wagon GitHub Pages Provider</name>
 	<description>
         Wagon for deploying site documentation to the gh-pages branch of a GitHub repository.
@@ -361,7 +361,7 @@
 	</distributionManagement>
 	<scm>
 		<connection>scm:git:git://github.com/khuxtable/wagon-gitsite.git</connection>
-		<developerConnection>scm:git:git+ssh://git@github.com/khuxtable/wagon-gitsite.git</developerConnection>
+		<developerConnection>scm:git:git@github.com/khuxtable/wagon-gitsite.git</developerConnection>
 		<url>http://github.com/khuxtable/wagon-gitsite</url>
 	</scm>
 	<reporting>
