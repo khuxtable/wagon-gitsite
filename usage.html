@@ -50,7 +50,7 @@
   
     
             <div class="xleft">
-        Version: 0.2
+        Version: 0.3.1
               </div>
             <div class="xright">            <a href="http://www.kathrynhuxtable.org/blog/projects/" class="externalLink">Kathryn Huxtable's Projects</a>
             |
@@ -199,7 +199,7 @@
       <span xmlns="" class="hl-tag">&lt;extension&gt;</span>
         <span xmlns="" class="hl-tag">&lt;groupId&gt;</span>org.kathrynhuxtable.maven.wagon<span xmlns="" class="hl-tag">&lt;/groupId&gt;</span>
         <span xmlns="" class="hl-tag">&lt;artifactId&gt;</span>wagon-gitsite<span xmlns="" class="hl-tag">&lt;/artifactId&gt;</span>
-        <span xmlns="" class="hl-tag">&lt;version&gt;</span>0.2<span xmlns="" class="hl-tag">&lt;/version&gt;</span>
+        <span xmlns="" class="hl-tag">&lt;version&gt;</span>0.3.1<span xmlns="" class="hl-tag">&lt;/version&gt;</span>
       <span xmlns="" class="hl-tag">&lt;/extension&gt;</span>
     <span xmlns="" class="hl-tag">&lt;/extensions&gt;</span>
   <span xmlns="" class="hl-tag">&lt;/build&gt;</span>
@@ -207,7 +207,7 @@
   <span xmlns="" class="hl-tag">&lt;distributionManagement&gt;</span>
     ...
     <span xmlns="" class="hl-tag">&lt;site&gt;</span>
-      <span xmlns="" class="hl-tag">&lt;id&gt;</span>my-project-site<span xmlns="" class="hl-tag">&lt;/id&gt;</span>
+      <span xmlns="" class="hl-tag">&lt;id&gt;</span>github-project-site<span xmlns="" class="hl-tag">&lt;/id&gt;</span>
       <span xmlns="" class="hl-tag">&lt;url&gt;</span>gitsite:git@github.com/tomjones/my-project.git<span xmlns="" class="hl-tag">&lt;/url&gt;</span>
     <span xmlns="" class="hl-tag">&lt;/site&gt;</span>
   <span xmlns="" class="hl-tag">&lt;/distributionManagement&gt;</span></pre>
@@ -216,6 +216,18 @@
       <pre class="programlisting" xml:space="preserve"><span xmlns="" class="hl-tag">&lt;url&gt;</span>gitsite:git@github.com/tomjones/my-project.git:<em class="replaceable"><code>my-branch</code></em><span xmlns="" class="hl-tag">&lt;/url&gt;</span></pre>
       <p>will deploy the site to the <em class="replaceable"><code>my-branch</code></em>
       branch instead of the <code class="literal">gh-pages</code> branch.</p>
+      <p>You might also need to add the following to your
+      <code class="literal">~/.m2/settings.xml</code></p>
+      <pre class="programlisting" xml:space="preserve">  ...
+  <span xmlns="" class="hl-tag">&lt;servers&gt;</span>
+    ...
+    <span xmlns="" class="hl-tag">&lt;server&gt;</span>
+      <span xmlns="" class="hl-tag">&lt;id&gt;</span>github-project-site<span xmlns="" class="hl-tag">&lt;/id&gt;</span>
+      <span xmlns="" class="hl-tag">&lt;username&gt;</span>git<span xmlns="" class="hl-tag">&lt;/username&gt;</span>
+    <span xmlns="" class="hl-tag">&lt;/server&gt;</span>
+    ...
+  <span xmlns="" class="hl-tag">&lt;/servers&gt;</span>
+  ...</pre>
     </div>
   </div>
 </div>
@@ -227,7 +239,7 @@
     <div id="footer">
       <div class="xleft">
         &#169;  
-          2010
+          2010-2011
     
           kathrynhuxtable.org
           
@@ -247,7 +259,7 @@
   
     
             <div id="lastPublished">
-        Last Published: 07 Apr 2010
+        Last Published: 05 Jan 2011
               </div>
             </div>
       <div class="xright">                              <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">

@@ -364,376 +364,390 @@
 <a name="354" href="#354">354</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error listing repository: "</span> + e.getMessage(), e);
 <a name="355" href="#355">355</a>         }
 <a name="356" href="#356">356</a> 
-<a name="357" href="#357">357</a>         <em class="jxr_comment">// ok, we've established that target exists, or is empty.</em>
-<a name="358" href="#358">358</a>         <em class="jxr_comment">// Check the resource out; if it doesn't exist, that means we're in the svn repo url root,</em>
-<a name="359" href="#359">359</a>         <em class="jxr_comment">// and the configuration is incorrect. We will not try repo.getParent since most scm's don't</em>
-<a name="360" href="#360">360</a>         <em class="jxr_comment">// implement that.</em>
-<a name="361" href="#361">361</a> 
-<a name="362" href="#362">362</a>         <strong class="jxr_keyword">try</strong> {
-<a name="363" href="#363">363</a>             scmRepository = getScmRepository(getRepository().getUrl());
-<a name="364" href="#364">364</a> 
-<a name="365" href="#365">365</a>             CommandParameters parameters = <strong class="jxr_keyword">new</strong> CommandParameters();
-<a name="366" href="#366">366</a> 
-<a name="367" href="#367">367</a>             parameters.setScmVersion(CommandParameter.SCM_VERSION, <strong class="jxr_keyword">new</strong> ScmBranch(siteBranch));
-<a name="368" href="#368">368</a> 
-<a name="369" href="#369">369</a>             parameters.setString(CommandParameter.RECURSIVE, <span class="jxr_string">"false"</span>);
-<a name="370" href="#370">370</a> 
-<a name="371" href="#371">371</a>             CheckOutScmResult ret = (CheckOutScmResult) executeCommand((GitExeScmProvider) scmProvider, <strong class="jxr_keyword">new</strong> GitSiteCheckOutCommand(),
-<a name="372" href="#372">372</a>                                                                        scmRepository.getProviderRepository(),
-<a name="373" href="#373">373</a>                                                                        <strong class="jxr_keyword">new</strong> ScmFileSet(<strong class="jxr_keyword">new</strong> File(checkoutDirectory, <span class="jxr_string">""</span>)), parameters);
-<a name="374" href="#374">374</a> 
-<a name="375" href="#375">375</a>             checkScmResult(ret);
-<a name="376" href="#376">376</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
-<a name="377" href="#377">377</a>             fireTransferError(resource, e, TransferEvent.REQUEST_PUT);
-<a name="378" href="#378">378</a> 
-<a name="379" href="#379">379</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error checking out: "</span> + e.getMessage(), e);
-<a name="380" href="#380">380</a>         }
-<a name="381" href="#381">381</a> 
-<a name="382" href="#382">382</a>         <em class="jxr_comment">// now create the subdirs in target, if it's a parent of targetName</em>
-<a name="383" href="#383">383</a> 
-<a name="384" href="#384">384</a>         String relPath = <span class="jxr_string">""</span>;
-<a name="385" href="#385">385</a> 
-<a name="386" href="#386">386</a>         <strong class="jxr_keyword">while</strong> (!stack.isEmpty()) {
-<a name="387" href="#387">387</a>             String p = (String) stack.pop();
-<a name="388" href="#388">388</a> 
-<a name="389" href="#389">389</a>             relPath += p + <span class="jxr_string">"/"</span>;
+<a name="357" href="#357">357</a>         <em class="jxr_comment">/*<em class="jxr_comment"> A URL for a module will look like: </em></em>
+<a name="358" href="#358">358</a> <em class="jxr_comment">         *   scm:git:ssh://github.com/auser/project.git/module</em>
+<a name="359" href="#359">359</a> <em class="jxr_comment">         * so we strip the module to get just:</em>
+<a name="360" href="#360">360</a> <em class="jxr_comment">         *   scm:git:ssh://github.com/auser/project.git</em>
+<a name="361" href="#361">361</a> <em class="jxr_comment">         * to ensure a successful checkout, then adjust the relative path.</em>
+<a name="362" href="#362">362</a> <em class="jxr_comment">         */</em>
+<a name="363" href="#363">363</a>         String url = getRepository().getUrl();
+<a name="364" href="#364">364</a>         String relPath = <span class="jxr_string">""</span>;
+<a name="365" href="#365">365</a>         <strong class="jxr_keyword">if</strong> (!url.endsWith(<span class="jxr_string">".git"</span>)) {
+<a name="366" href="#366">366</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> iGitSuffix = url.lastIndexOf(<span class="jxr_string">".git"</span>);
+<a name="367" href="#367">367</a>             <strong class="jxr_keyword">if</strong> (iGitSuffix &gt; 0) {
+<a name="368" href="#368">368</a>                 relPath = url.substring(iGitSuffix + 5) + '/';
+<a name="369" href="#369">369</a>                 url = url.substring(0, iGitSuffix + 4);
+<a name="370" href="#370">370</a>             }
+<a name="371" href="#371">371</a>         }
+<a name="372" href="#372">372</a> 
+<a name="373" href="#373">373</a>         <em class="jxr_comment">// ok, we've established that target exists, or is empty.</em>
+<a name="374" href="#374">374</a>         <em class="jxr_comment">// Check the resource out; if it doesn't exist, that means we're in the svn repo url root,</em>
+<a name="375" href="#375">375</a>         <em class="jxr_comment">// and the configuration is incorrect. We will not try repo.getParent since most scm's don't</em>
+<a name="376" href="#376">376</a>         <em class="jxr_comment">// implement that.</em>
+<a name="377" href="#377">377</a> 
+<a name="378" href="#378">378</a>         <strong class="jxr_keyword">try</strong> {
+<a name="379" href="#379">379</a>             scmRepository = getScmRepository(url);
+<a name="380" href="#380">380</a> 
+<a name="381" href="#381">381</a>             CommandParameters parameters = <strong class="jxr_keyword">new</strong> CommandParameters();
+<a name="382" href="#382">382</a> 
+<a name="383" href="#383">383</a>             parameters.setScmVersion(CommandParameter.SCM_VERSION, <strong class="jxr_keyword">new</strong> ScmBranch(siteBranch));
+<a name="384" href="#384">384</a> 
+<a name="385" href="#385">385</a>             parameters.setString(CommandParameter.RECURSIVE, <span class="jxr_string">"false"</span>);
+<a name="386" href="#386">386</a> 
+<a name="387" href="#387">387</a>             CheckOutScmResult ret = (CheckOutScmResult) executeCommand((GitExeScmProvider) scmProvider, <strong class="jxr_keyword">new</strong> GitSiteCheckOutCommand(),
+<a name="388" href="#388">388</a>                                                                        scmRepository.getProviderRepository(),
+<a name="389" href="#389">389</a>                                                                        <strong class="jxr_keyword">new</strong> ScmFileSet(<strong class="jxr_keyword">new</strong> File(checkoutDirectory, <span class="jxr_string">""</span>)), parameters);
 <a name="390" href="#390">390</a> 
-<a name="391" href="#391">391</a>             File newDir = <strong class="jxr_keyword">new</strong> File(checkoutDirectory, relPath);
-<a name="392" href="#392">392</a> 
-<a name="393" href="#393">393</a>             <strong class="jxr_keyword">if</strong> (!newDir.mkdirs()) {
-<a name="394" href="#394">394</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Failed to create directory "</span> + newDir.getAbsolutePath() + <span class="jxr_string">"; parent should exist: "</span>
-<a name="395" href="#395">395</a>                                                   + checkoutDirectory);
-<a name="396" href="#396">396</a>             }
+<a name="391" href="#391">391</a>             checkScmResult(ret);
+<a name="392" href="#392">392</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
+<a name="393" href="#393">393</a>             fireTransferError(resource, e, TransferEvent.REQUEST_PUT);
+<a name="394" href="#394">394</a> 
+<a name="395" href="#395">395</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error checking out: "</span> + e.getMessage(), e);
+<a name="396" href="#396">396</a>         }
 <a name="397" href="#397">397</a> 
-<a name="398" href="#398">398</a>             <strong class="jxr_keyword">try</strong> {
-<a name="399" href="#399">399</a>                 addFiles(scmProvider, scmRepository, checkoutDirectory, relPath);
-<a name="400" href="#400">400</a>             } <strong class="jxr_keyword">catch</strong> (ScmException e) {
-<a name="401" href="#401">401</a>                 fireTransferError(resource, e, TransferEvent.REQUEST_PUT);
+<a name="398" href="#398">398</a>         <em class="jxr_comment">// now create the subdirs in target, if it's a parent of targetName</em>
+<a name="399" href="#399">399</a> 
+<a name="400" href="#400">400</a>         <strong class="jxr_keyword">while</strong> (!stack.isEmpty()) {
+<a name="401" href="#401">401</a>             String p = (String) stack.pop();
 <a name="402" href="#402">402</a> 
-<a name="403" href="#403">403</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Failed to add directory "</span> + newDir + <span class="jxr_string">" to working copy"</span>, e);
-<a name="404" href="#404">404</a>             }
-<a name="405" href="#405">405</a>         }
+<a name="403" href="#403">403</a>             relPath += p + '/';
+<a name="404" href="#404">404</a> 
+<a name="405" href="#405">405</a>             File newDir = <strong class="jxr_keyword">new</strong> File(checkoutDirectory, relPath);
 <a name="406" href="#406">406</a> 
-<a name="407" href="#407">407</a>         <strong class="jxr_keyword">return</strong> relPath;
-<a name="408" href="#408">408</a>     }
-<a name="409" href="#409">409</a> 
-<a name="410" href="#410">410</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="411" href="#411">411</a> <em class="jxr_javadoccomment">     * Add a file or directory to a SCM repository. If it's a directory all its</em>
-<a name="412" href="#412">412</a> <em class="jxr_javadoccomment">     * contents are added recursively.</em>
-<a name="413" href="#413">413</a> <em class="jxr_javadoccomment">     *</em>
-<a name="414" href="#414">414</a> <em class="jxr_javadoccomment">     * &lt;p&gt;TODO this is less than optimal, SCM API should provide a way to add a</em>
-<a name="415" href="#415">415</a> <em class="jxr_javadoccomment">     * directory recursively&lt;/p&gt;</em>
-<a name="416" href="#416">416</a> <em class="jxr_javadoccomment">     *</em>
-<a name="417" href="#417">417</a> <em class="jxr_javadoccomment">     * @param  scmProvider   SCM provider</em>
-<a name="418" href="#418">418</a> <em class="jxr_javadoccomment">     * @param  scmRepository SCM repository</em>
-<a name="419" href="#419">419</a> <em class="jxr_javadoccomment">     * @param  basedir       local directory corresponding to scmRepository</em>
-<a name="420" href="#420">420</a> <em class="jxr_javadoccomment">     * @param  scmFilePath   path of the file or directory to add, relative to</em>
-<a name="421" href="#421">421</a> <em class="jxr_javadoccomment">     *                       basedir</em>
-<a name="422" href="#422">422</a> <em class="jxr_javadoccomment">     *</em>
-<a name="423" href="#423">423</a> <em class="jxr_javadoccomment">     * @return the number of files added.</em>
-<a name="424" href="#424">424</a> <em class="jxr_javadoccomment">     *</em>
-<a name="425" href="#425">425</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
-<a name="426" href="#426">426</a> <em class="jxr_javadoccomment">     */</em>
-<a name="427" href="#427">427</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> addFiles(ScmProvider scmProvider, ScmRepository scmRepository, File basedir, String scmFilePath) <strong class="jxr_keyword">throws</strong> ScmException {
-<a name="428" href="#428">428</a>         <strong class="jxr_keyword">int</strong> addedFiles = 0;
-<a name="429" href="#429">429</a> 
-<a name="430" href="#430">430</a>         File scmFile = <strong class="jxr_keyword">new</strong> File(basedir, scmFilePath);
-<a name="431" href="#431">431</a> 
-<a name="432" href="#432">432</a>         <strong class="jxr_keyword">if</strong> (scmFilePath.length() != 0) {
-<a name="433" href="#433">433</a>             AddScmResult result = scmProvider.add(scmRepository, <strong class="jxr_keyword">new</strong> ScmFileSet(basedir, <strong class="jxr_keyword">new</strong> File(scmFilePath)));
-<a name="434" href="#434">434</a> 
-<a name="435" href="#435">435</a>             <em class="jxr_comment">/*</em>
-<a name="436" href="#436">436</a> <em class="jxr_comment">             * TODO dirty fix to work around files with property svn:eol-style=native if a file has that property, first</em>
-<a name="437" href="#437">437</a> <em class="jxr_comment">             * time file is added it fails, second time it succeeds the solution is check if the scm provider is svn and</em>
-<a name="438" href="#438">438</a> <em class="jxr_comment">             * unset that property when the SCM API allows it</em>
-<a name="439" href="#439">439</a> <em class="jxr_comment">             */</em>
-<a name="440" href="#440">440</a>             <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
-<a name="441" href="#441">441</a>                 result = scmProvider.add(scmRepository, <strong class="jxr_keyword">new</strong> ScmFileSet(basedir, <strong class="jxr_keyword">new</strong> File(scmFilePath)));
-<a name="442" href="#442">442</a>             }
+<a name="407" href="#407">407</a>             <strong class="jxr_keyword">if</strong> (!newDir.mkdirs()) {
+<a name="408" href="#408">408</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Failed to create directory "</span> + newDir.getAbsolutePath() + <span class="jxr_string">"; parent should exist: "</span>
+<a name="409" href="#409">409</a>                                                   + checkoutDirectory);
+<a name="410" href="#410">410</a>             }
+<a name="411" href="#411">411</a> 
+<a name="412" href="#412">412</a>             <strong class="jxr_keyword">try</strong> {
+<a name="413" href="#413">413</a>                 addFiles(scmProvider, scmRepository, checkoutDirectory, relPath);
+<a name="414" href="#414">414</a>             } <strong class="jxr_keyword">catch</strong> (ScmException e) {
+<a name="415" href="#415">415</a>                 fireTransferError(resource, e, TransferEvent.REQUEST_PUT);
+<a name="416" href="#416">416</a> 
+<a name="417" href="#417">417</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Failed to add directory "</span> + newDir + <span class="jxr_string">" to working copy"</span>, e);
+<a name="418" href="#418">418</a>             }
+<a name="419" href="#419">419</a>         }
+<a name="420" href="#420">420</a> 
+<a name="421" href="#421">421</a>         <strong class="jxr_keyword">return</strong> relPath;
+<a name="422" href="#422">422</a>     }
+<a name="423" href="#423">423</a> 
+<a name="424" href="#424">424</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="425" href="#425">425</a> <em class="jxr_javadoccomment">     * Add a file or directory to a SCM repository. If it's a directory all its</em>
+<a name="426" href="#426">426</a> <em class="jxr_javadoccomment">     * contents are added recursively.</em>
+<a name="427" href="#427">427</a> <em class="jxr_javadoccomment">     *</em>
+<a name="428" href="#428">428</a> <em class="jxr_javadoccomment">     * &lt;p&gt;TODO this is less than optimal, SCM API should provide a way to add a</em>
+<a name="429" href="#429">429</a> <em class="jxr_javadoccomment">     * directory recursively&lt;/p&gt;</em>
+<a name="430" href="#430">430</a> <em class="jxr_javadoccomment">     *</em>
+<a name="431" href="#431">431</a> <em class="jxr_javadoccomment">     * @param  scmProvider   SCM provider</em>
+<a name="432" href="#432">432</a> <em class="jxr_javadoccomment">     * @param  scmRepository SCM repository</em>
+<a name="433" href="#433">433</a> <em class="jxr_javadoccomment">     * @param  basedir       local directory corresponding to scmRepository</em>
+<a name="434" href="#434">434</a> <em class="jxr_javadoccomment">     * @param  scmFilePath   path of the file or directory to add, relative to</em>
+<a name="435" href="#435">435</a> <em class="jxr_javadoccomment">     *                       basedir</em>
+<a name="436" href="#436">436</a> <em class="jxr_javadoccomment">     *</em>
+<a name="437" href="#437">437</a> <em class="jxr_javadoccomment">     * @return the number of files added.</em>
+<a name="438" href="#438">438</a> <em class="jxr_javadoccomment">     *</em>
+<a name="439" href="#439">439</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
+<a name="440" href="#440">440</a> <em class="jxr_javadoccomment">     */</em>
+<a name="441" href="#441">441</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> addFiles(ScmProvider scmProvider, ScmRepository scmRepository, File basedir, String scmFilePath) <strong class="jxr_keyword">throws</strong> ScmException {
+<a name="442" href="#442">442</a>         <strong class="jxr_keyword">int</strong> addedFiles = 0;
 <a name="443" href="#443">443</a> 
-<a name="444" href="#444">444</a>             addedFiles = result.getAddedFiles().size();
-<a name="445" href="#445">445</a>         }
-<a name="446" href="#446">446</a> 
-<a name="447" href="#447">447</a>         String reservedScmFile = scmProvider.getScmSpecificFilename();
+<a name="444" href="#444">444</a>         File scmFile = <strong class="jxr_keyword">new</strong> File(basedir, scmFilePath);
+<a name="445" href="#445">445</a> 
+<a name="446" href="#446">446</a>         <strong class="jxr_keyword">if</strong> (scmFilePath.length() != 0) {
+<a name="447" href="#447">447</a>             AddScmResult result = scmProvider.add(scmRepository, <strong class="jxr_keyword">new</strong> ScmFileSet(basedir, <strong class="jxr_keyword">new</strong> File(scmFilePath)));
 <a name="448" href="#448">448</a> 
-<a name="449" href="#449">449</a>         <strong class="jxr_keyword">if</strong> (scmFile.isDirectory()) {
-<a name="450" href="#450">450</a>             File[] files = scmFile.listFiles();
-<a name="451" href="#451">451</a> 
-<a name="452" href="#452">452</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; files.length; i++) {
-<a name="453" href="#453">453</a>                 <strong class="jxr_keyword">if</strong> (reservedScmFile != <strong class="jxr_keyword">null</strong> &amp;&amp; !reservedScmFile.equals(files[i].getName())) {
-<a name="454" href="#454">454</a>                     addedFiles += addFiles(scmProvider, scmRepository, basedir,
-<a name="455" href="#455">455</a>                                            (scmFilePath.length() == 0 ? <span class="jxr_string">""</span> : scmFilePath + <span class="jxr_string">"/"</span>) + files[i].getName());
-<a name="456" href="#456">456</a>                 }
-<a name="457" href="#457">457</a>             }
-<a name="458" href="#458">458</a>         }
-<a name="459" href="#459">459</a> 
-<a name="460" href="#460">460</a>         <strong class="jxr_keyword">return</strong> addedFiles;
-<a name="461" href="#461">461</a>     }
+<a name="449" href="#449">449</a>             <em class="jxr_comment">/*</em>
+<a name="450" href="#450">450</a> <em class="jxr_comment">             * TODO dirty fix to work around files with property svn:eol-style=native if a file has that property, first</em>
+<a name="451" href="#451">451</a> <em class="jxr_comment">             * time file is added it fails, second time it succeeds the solution is check if the scm provider is svn and</em>
+<a name="452" href="#452">452</a> <em class="jxr_comment">             * unset that property when the SCM API allows it</em>
+<a name="453" href="#453">453</a> <em class="jxr_comment">             */</em>
+<a name="454" href="#454">454</a>             <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
+<a name="455" href="#455">455</a>                 result = scmProvider.add(scmRepository, <strong class="jxr_keyword">new</strong> ScmFileSet(basedir, <strong class="jxr_keyword">new</strong> File(scmFilePath)));
+<a name="456" href="#456">456</a>             }
+<a name="457" href="#457">457</a> 
+<a name="458" href="#458">458</a>             addedFiles = result.getAddedFiles().size();
+<a name="459" href="#459">459</a>         }
+<a name="460" href="#460">460</a> 
+<a name="461" href="#461">461</a>         String reservedScmFile = scmProvider.getScmSpecificFilename();
 <a name="462" href="#462">462</a> 
-<a name="463" href="#463">463</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="464" href="#464">464</a> <em class="jxr_javadoccomment">     * Return whether or not this wagon supports directory copy.</em>
-<a name="465" href="#465">465</a> <em class="jxr_javadoccomment">     *</em>
-<a name="466" href="#466">466</a> <em class="jxr_javadoccomment">     * @return {@code true}</em>
-<a name="467" href="#467">467</a> <em class="jxr_javadoccomment">     *</em>
-<a name="468" href="#468">468</a> <em class="jxr_javadoccomment">     * @see    org.apache.maven.wagon.AbstractWagon#supportsDirectoryCopy()</em>
-<a name="469" href="#469">469</a> <em class="jxr_javadoccomment">     */</em>
-<a name="470" href="#470">470</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> supportsDirectoryCopy() {
-<a name="471" href="#471">471</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a name="472" href="#472">472</a>     }
+<a name="463" href="#463">463</a>         <strong class="jxr_keyword">if</strong> (scmFile.isDirectory()) {
+<a name="464" href="#464">464</a>             File[] files = scmFile.listFiles();
+<a name="465" href="#465">465</a> 
+<a name="466" href="#466">466</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; files.length; i++) {
+<a name="467" href="#467">467</a>                 <strong class="jxr_keyword">if</strong> (reservedScmFile != <strong class="jxr_keyword">null</strong> &amp;&amp; !reservedScmFile.equals(files[i].getName())) {
+<a name="468" href="#468">468</a>                     addedFiles += addFiles(scmProvider, scmRepository, basedir,
+<a name="469" href="#469">469</a>                                            (scmFilePath.length() == 0 ? <span class="jxr_string">""</span> : scmFilePath + <span class="jxr_string">"/"</span>) + files[i].getName());
+<a name="470" href="#470">470</a>                 }
+<a name="471" href="#471">471</a>             }
+<a name="472" href="#472">472</a>         }
 <a name="473" href="#473">473</a> 
-<a name="474" href="#474">474</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="475" href="#475">475</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#connect(org.apache.maven.wagon.repository.Repository,</em>
-<a name="476" href="#476">476</a> <em class="jxr_javadoccomment">     *      org.apache.maven.wagon.authentication.AuthenticationInfo,</em>
-<a name="477" href="#477">477</a> <em class="jxr_javadoccomment">     *      org.apache.maven.wagon.proxy.ProxyInfoProvider)</em>
-<a name="478" href="#478">478</a> <em class="jxr_javadoccomment">     */</em>
-<a name="479" href="#479">479</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(Repository repository, AuthenticationInfo authenticationInfo, ProxyInfoProvider proxyInfoProvider)
-<a name="480" href="#480">480</a>         <strong class="jxr_keyword">throws</strong> ConnectionException, AuthenticationException {
-<a name="481" href="#481">481</a>         String url = repository.getUrl();
-<a name="482" href="#482">482</a> 
-<a name="483" href="#483">483</a>         <strong class="jxr_keyword">if</strong> (url.startsWith(<span class="jxr_string">"gitsite:"</span>)) {
-<a name="484" href="#484">484</a>             url = url.substring(8);
-<a name="485" href="#485">485</a>             <strong class="jxr_keyword">int</strong> index = url.indexOf(':');
-<a name="486" href="#486">486</a> 
-<a name="487" href="#487">487</a>             <strong class="jxr_keyword">if</strong> (index &gt; -1) {
-<a name="488" href="#488">488</a>                 siteBranch = url.substring(index + 1);
-<a name="489" href="#489">489</a>                 url        = url.substring(0, index);
-<a name="490" href="#490">490</a>             } <strong class="jxr_keyword">else</strong> {
-<a name="491" href="#491">491</a>                 siteBranch = <span class="jxr_string">"gh-pages"</span>;
-<a name="492" href="#492">492</a>             }
-<a name="493" href="#493">493</a> 
-<a name="494" href="#494">494</a>             url = <span class="jxr_string">"scm:git:ssh://"</span> + url;
-<a name="495" href="#495">495</a>             repository.setUrl(url);
-<a name="496" href="#496">496</a>         }
-<a name="497" href="#497">497</a> 
-<a name="498" href="#498">498</a>         <strong class="jxr_keyword">super</strong>.connect(repository, authenticationInfo, proxyInfoProvider);
-<a name="499" href="#499">499</a>     }
+<a name="474" href="#474">474</a>         <strong class="jxr_keyword">return</strong> addedFiles;
+<a name="475" href="#475">475</a>     }
+<a name="476" href="#476">476</a> 
+<a name="477" href="#477">477</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="478" href="#478">478</a> <em class="jxr_javadoccomment">     * Return whether or not this wagon supports directory copy.</em>
+<a name="479" href="#479">479</a> <em class="jxr_javadoccomment">     *</em>
+<a name="480" href="#480">480</a> <em class="jxr_javadoccomment">     * @return {@code true}</em>
+<a name="481" href="#481">481</a> <em class="jxr_javadoccomment">     *</em>
+<a name="482" href="#482">482</a> <em class="jxr_javadoccomment">     * @see    org.apache.maven.wagon.AbstractWagon#supportsDirectoryCopy()</em>
+<a name="483" href="#483">483</a> <em class="jxr_javadoccomment">     */</em>
+<a name="484" href="#484">484</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> supportsDirectoryCopy() {
+<a name="485" href="#485">485</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a name="486" href="#486">486</a>     }
+<a name="487" href="#487">487</a> 
+<a name="488" href="#488">488</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="489" href="#489">489</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#connect(org.apache.maven.wagon.repository.Repository,</em>
+<a name="490" href="#490">490</a> <em class="jxr_javadoccomment">     *      org.apache.maven.wagon.authentication.AuthenticationInfo,</em>
+<a name="491" href="#491">491</a> <em class="jxr_javadoccomment">     *      org.apache.maven.wagon.proxy.ProxyInfoProvider)</em>
+<a name="492" href="#492">492</a> <em class="jxr_javadoccomment">     */</em>
+<a name="493" href="#493">493</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(Repository repository, AuthenticationInfo authenticationInfo, ProxyInfoProvider proxyInfoProvider)
+<a name="494" href="#494">494</a>         <strong class="jxr_keyword">throws</strong> ConnectionException, AuthenticationException {
+<a name="495" href="#495">495</a>         String url = repository.getUrl();
+<a name="496" href="#496">496</a> 
+<a name="497" href="#497">497</a>         <strong class="jxr_keyword">if</strong> (url.startsWith(<span class="jxr_string">"gitsite:"</span>)) {
+<a name="498" href="#498">498</a>             url = url.substring(8);
+<a name="499" href="#499">499</a>             <strong class="jxr_keyword">int</strong> index = url.indexOf(':');
 <a name="500" href="#500">500</a> 
-<a name="501" href="#501">501</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="502" href="#502">502</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#put(java.io.File, java.lang.String)</em>
-<a name="503" href="#503">503</a> <em class="jxr_javadoccomment">     */</em>
-<a name="504" href="#504">504</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> put(File source, String destination) <strong class="jxr_keyword">throws</strong> TransferFailedException {
-<a name="505" href="#505">505</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Not currently supported: put"</span>);
-<a name="506" href="#506">506</a>     }
+<a name="501" href="#501">501</a>             <strong class="jxr_keyword">if</strong> (index &gt; -1) {
+<a name="502" href="#502">502</a>                 siteBranch = url.substring(index + 1);
+<a name="503" href="#503">503</a>                 url        = url.substring(0, index);
+<a name="504" href="#504">504</a>             } <strong class="jxr_keyword">else</strong> {
+<a name="505" href="#505">505</a>                 siteBranch = <span class="jxr_string">"gh-pages"</span>;
+<a name="506" href="#506">506</a>             }
 <a name="507" href="#507">507</a> 
-<a name="508" href="#508">508</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="509" href="#509">509</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#putDirectory(java.io.File, java.lang.String)</em>
-<a name="510" href="#510">510</a> <em class="jxr_javadoccomment">     */</em>
-<a name="511" href="#511">511</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> putDirectory(File sourceDirectory, String destinationDirectory) <strong class="jxr_keyword">throws</strong> TransferFailedException,
-<a name="512" href="#512">512</a>         ResourceDoesNotExistException, AuthorizationException {
-<a name="513" href="#513">513</a>         <strong class="jxr_keyword">if</strong> (!sourceDirectory.isDirectory()) {
-<a name="514" href="#514">514</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Source is not a directory: "</span> + sourceDirectory);
-<a name="515" href="#515">515</a>         }
-<a name="516" href="#516">516</a> 
-<a name="517" href="#517">517</a>         Resource target = <strong class="jxr_keyword">new</strong> Resource(destinationDirectory);
-<a name="518" href="#518">518</a> 
-<a name="519" href="#519">519</a>         firePutInitiated(target, sourceDirectory);
-<a name="520" href="#520">520</a> 
-<a name="521" href="#521">521</a>         <strong class="jxr_keyword">try</strong> {
-<a name="522" href="#522">522</a>             ScmRepository scmRepository = getScmRepository(getRepository().getUrl());
-<a name="523" href="#523">523</a> 
-<a name="524" href="#524">524</a>             target.setContentLength(sourceDirectory.length());
-<a name="525" href="#525">525</a>             target.setLastModified(sourceDirectory.lastModified());
-<a name="526" href="#526">526</a> 
-<a name="527" href="#527">527</a>             firePutStarted(target, sourceDirectory);
-<a name="528" href="#528">528</a> 
-<a name="529" href="#529">529</a>             String msg = <span class="jxr_string">"Wagon: Deploying "</span> + sourceDirectory.getName() + <span class="jxr_string">" to repository"</span>;
+<a name="508" href="#508">508</a>             url = <span class="jxr_string">"scm:git:ssh://"</span> + url;
+<a name="509" href="#509">509</a>             repository.setUrl(url);
+<a name="510" href="#510">510</a>         }
+<a name="511" href="#511">511</a> 
+<a name="512" href="#512">512</a>         <strong class="jxr_keyword">super</strong>.connect(repository, authenticationInfo, proxyInfoProvider);
+<a name="513" href="#513">513</a>     }
+<a name="514" href="#514">514</a> 
+<a name="515" href="#515">515</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="516" href="#516">516</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#put(java.io.File, java.lang.String)</em>
+<a name="517" href="#517">517</a> <em class="jxr_javadoccomment">     */</em>
+<a name="518" href="#518">518</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> put(File source, String destination) <strong class="jxr_keyword">throws</strong> TransferFailedException {
+<a name="519" href="#519">519</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Not currently supported: put"</span>);
+<a name="520" href="#520">520</a>     }
+<a name="521" href="#521">521</a> 
+<a name="522" href="#522">522</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="523" href="#523">523</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#putDirectory(java.io.File, java.lang.String)</em>
+<a name="524" href="#524">524</a> <em class="jxr_javadoccomment">     */</em>
+<a name="525" href="#525">525</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> putDirectory(File sourceDirectory, String destinationDirectory) <strong class="jxr_keyword">throws</strong> TransferFailedException,
+<a name="526" href="#526">526</a>         ResourceDoesNotExistException, AuthorizationException {
+<a name="527" href="#527">527</a>         <strong class="jxr_keyword">if</strong> (!sourceDirectory.isDirectory()) {
+<a name="528" href="#528">528</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Source is not a directory: "</span> + sourceDirectory);
+<a name="529" href="#529">529</a>         }
 <a name="530" href="#530">530</a> 
-<a name="531" href="#531">531</a>             ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
+<a name="531" href="#531">531</a>         Resource target = <strong class="jxr_keyword">new</strong> Resource(destinationDirectory);
 <a name="532" href="#532">532</a> 
-<a name="533" href="#533">533</a>             String checkoutTargetName = sourceDirectory.isDirectory() ? destinationDirectory : getDirname(destinationDirectory);
-<a name="534" href="#534">534</a>             String relPath            = checkOut(scmProvider, scmRepository, checkoutTargetName, target);
-<a name="535" href="#535">535</a> 
-<a name="536" href="#536">536</a>             File newCheckoutDirectory = <strong class="jxr_keyword">new</strong> File(checkoutDirectory, relPath);
+<a name="533" href="#533">533</a>         firePutInitiated(target, sourceDirectory);
+<a name="534" href="#534">534</a> 
+<a name="535" href="#535">535</a>         <strong class="jxr_keyword">try</strong> {
+<a name="536" href="#536">536</a>             ScmRepository scmRepository = getScmRepository(getRepository().getUrl());
 <a name="537" href="#537">537</a> 
-<a name="538" href="#538">538</a>             File scmFile = <strong class="jxr_keyword">new</strong> File(newCheckoutDirectory, sourceDirectory.isDirectory() ? <span class="jxr_string">""</span> : getFilename(destinationDirectory));
-<a name="539" href="#539">539</a> 
-<a name="540" href="#540">540</a>             <strong class="jxr_keyword">boolean</strong> fileAlreadyInScm = scmFile.exists();
-<a name="541" href="#541">541</a> 
-<a name="542" href="#542">542</a>             <strong class="jxr_keyword">if</strong> (!scmFile.equals(sourceDirectory)) {
-<a name="543" href="#543">543</a>                 <strong class="jxr_keyword">if</strong> (sourceDirectory.isDirectory()) {
-<a name="544" href="#544">544</a>                     FileUtils.copyDirectoryStructure(sourceDirectory, scmFile);
-<a name="545" href="#545">545</a>                 } <strong class="jxr_keyword">else</strong> {
-<a name="546" href="#546">546</a>                     FileUtils.copyFile(sourceDirectory, scmFile);
-<a name="547" href="#547">547</a>                 }
-<a name="548" href="#548">548</a>             }
+<a name="538" href="#538">538</a>             target.setContentLength(sourceDirectory.length());
+<a name="539" href="#539">539</a>             target.setLastModified(sourceDirectory.lastModified());
+<a name="540" href="#540">540</a> 
+<a name="541" href="#541">541</a>             firePutStarted(target, sourceDirectory);
+<a name="542" href="#542">542</a> 
+<a name="543" href="#543">543</a>             String msg = <span class="jxr_string">"Wagon: Deploying "</span> + sourceDirectory.getName() + <span class="jxr_string">" to repository"</span>;
+<a name="544" href="#544">544</a> 
+<a name="545" href="#545">545</a>             ScmProvider scmProvider = getScmProvider(scmRepository.getProvider());
+<a name="546" href="#546">546</a> 
+<a name="547" href="#547">547</a>             String checkoutTargetName = sourceDirectory.isDirectory() ? destinationDirectory : getDirname(destinationDirectory);
+<a name="548" href="#548">548</a>             String relPath            = checkOut(scmProvider, scmRepository, checkoutTargetName, target);
 <a name="549" href="#549">549</a> 
-<a name="550" href="#550">550</a>             <strong class="jxr_keyword">if</strong> (!fileAlreadyInScm || scmFile.isDirectory()) {
-<a name="551" href="#551">551</a>                 <strong class="jxr_keyword">int</strong> addedFiles = addFiles(scmProvider, scmRepository, newCheckoutDirectory,
-<a name="552" href="#552">552</a>                                           sourceDirectory.isDirectory() ? <span class="jxr_string">""</span> : scmFile.getName());
+<a name="550" href="#550">550</a>             File newCheckoutDirectory = <strong class="jxr_keyword">new</strong> File(checkoutDirectory, relPath);
+<a name="551" href="#551">551</a> 
+<a name="552" href="#552">552</a>             File scmFile = <strong class="jxr_keyword">new</strong> File(newCheckoutDirectory, sourceDirectory.isDirectory() ? <span class="jxr_string">""</span> : getFilename(destinationDirectory));
 <a name="553" href="#553">553</a> 
-<a name="554" href="#554">554</a>                 <strong class="jxr_keyword">if</strong> (!fileAlreadyInScm &amp;&amp; addedFiles == 0) {
-<a name="555" href="#555">555</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ScmException(<span class="jxr_string">"Unable to add file to SCM: "</span> + scmFile + <span class="jxr_string">"; see error messages above for more information"</span>);
-<a name="556" href="#556">556</a>                 }
-<a name="557" href="#557">557</a>             }
-<a name="558" href="#558">558</a> 
-<a name="559" href="#559">559</a>             checkIn(scmProvider, scmRepository, msg);
-<a name="560" href="#560">560</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
-<a name="561" href="#561">561</a>             e.printStackTrace();
-<a name="562" href="#562">562</a>             fireTransferError(target, e, TransferEvent.REQUEST_GET);
+<a name="554" href="#554">554</a>             <strong class="jxr_keyword">boolean</strong> fileAlreadyInScm = scmFile.exists();
+<a name="555" href="#555">555</a> 
+<a name="556" href="#556">556</a>             <strong class="jxr_keyword">if</strong> (!scmFile.equals(sourceDirectory)) {
+<a name="557" href="#557">557</a>                 <strong class="jxr_keyword">if</strong> (sourceDirectory.isDirectory()) {
+<a name="558" href="#558">558</a>                     FileUtils.copyDirectoryStructure(sourceDirectory, scmFile);
+<a name="559" href="#559">559</a>                 } <strong class="jxr_keyword">else</strong> {
+<a name="560" href="#560">560</a>                     FileUtils.copyFile(sourceDirectory, scmFile);
+<a name="561" href="#561">561</a>                 }
+<a name="562" href="#562">562</a>             }
 <a name="563" href="#563">563</a> 
-<a name="564" href="#564">564</a>             System.exit(1);
-<a name="565" href="#565">565</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error interacting with SCM: "</span> + e.getMessage(), e);
-<a name="566" href="#566">566</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a name="567" href="#567">567</a>             fireTransferError(target, e, TransferEvent.REQUEST_GET);
-<a name="568" href="#568">568</a> 
-<a name="569" href="#569">569</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error interacting with SCM: "</span> + e.getMessage(), e);
-<a name="570" href="#570">570</a>         }
-<a name="571" href="#571">571</a> 
-<a name="572" href="#572">572</a>         <strong class="jxr_keyword">if</strong> (sourceDirectory.isFile()) {
-<a name="573" href="#573">573</a>             postProcessListeners(target, sourceDirectory, TransferEvent.REQUEST_PUT);
-<a name="574" href="#574">574</a>         }
-<a name="575" href="#575">575</a> 
-<a name="576" href="#576">576</a>         firePutCompleted(target, sourceDirectory);
-<a name="577" href="#577">577</a>     }
-<a name="578" href="#578">578</a> 
-<a name="579" href="#579">579</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="580" href="#580">580</a> <em class="jxr_javadoccomment">     * Check that the ScmResult was a successful operation</em>
-<a name="581" href="#581">581</a> <em class="jxr_javadoccomment">     *</em>
-<a name="582" href="#582">582</a> <em class="jxr_javadoccomment">     * @param  result the SCM result.</em>
-<a name="583" href="#583">583</a> <em class="jxr_javadoccomment">     *</em>
-<a name="584" href="#584">584</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
-<a name="585" href="#585">585</a> <em class="jxr_javadoccomment">     */</em>
-<a name="586" href="#586">586</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkScmResult(ScmResult result) <strong class="jxr_keyword">throws</strong> ScmException {
-<a name="587" href="#587">587</a>         <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
-<a name="588" href="#588">588</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ScmException(<span class="jxr_string">"Unable to commit file. "</span> + result.getProviderMessage() + <span class="jxr_string">" "</span>
-<a name="589" href="#589">589</a>                                    + (result.getCommandOutput() == <strong class="jxr_keyword">null</strong> ? <span class="jxr_string">""</span> : result.getCommandOutput()));
-<a name="590" href="#590">590</a>         }
+<a name="564" href="#564">564</a>             <strong class="jxr_keyword">if</strong> (!fileAlreadyInScm || scmFile.isDirectory()) {
+<a name="565" href="#565">565</a>                 <strong class="jxr_keyword">int</strong> addedFiles = addFiles(scmProvider, scmRepository, newCheckoutDirectory,
+<a name="566" href="#566">566</a>                                           sourceDirectory.isDirectory() ? <span class="jxr_string">""</span> : scmFile.getName());
+<a name="567" href="#567">567</a> 
+<a name="568" href="#568">568</a>                 <strong class="jxr_keyword">if</strong> (!fileAlreadyInScm &amp;&amp; addedFiles == 0) {
+<a name="569" href="#569">569</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ScmException(<span class="jxr_string">"Unable to add file to SCM: "</span> + scmFile + <span class="jxr_string">"; see error messages above for more information"</span>);
+<a name="570" href="#570">570</a>                 }
+<a name="571" href="#571">571</a>             }
+<a name="572" href="#572">572</a> 
+<a name="573" href="#573">573</a>             checkIn(scmProvider, scmRepository, msg);
+<a name="574" href="#574">574</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
+<a name="575" href="#575">575</a>             e.printStackTrace();
+<a name="576" href="#576">576</a>             fireTransferError(target, e, TransferEvent.REQUEST_GET);
+<a name="577" href="#577">577</a> 
+<a name="578" href="#578">578</a>             System.exit(1);
+<a name="579" href="#579">579</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error interacting with SCM: "</span> + e.getMessage(), e);
+<a name="580" href="#580">580</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a name="581" href="#581">581</a>             fireTransferError(target, e, TransferEvent.REQUEST_GET);
+<a name="582" href="#582">582</a> 
+<a name="583" href="#583">583</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error interacting with SCM: "</span> + e.getMessage(), e);
+<a name="584" href="#584">584</a>         }
+<a name="585" href="#585">585</a> 
+<a name="586" href="#586">586</a>         <strong class="jxr_keyword">if</strong> (sourceDirectory.isFile()) {
+<a name="587" href="#587">587</a>             postProcessListeners(target, sourceDirectory, TransferEvent.REQUEST_PUT);
+<a name="588" href="#588">588</a>         }
+<a name="589" href="#589">589</a> 
+<a name="590" href="#590">590</a>         firePutCompleted(target, sourceDirectory);
 <a name="591" href="#591">591</a>     }
 <a name="592" href="#592">592</a> 
 <a name="593" href="#593">593</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="594" href="#594">594</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#closeConnection()</em>
-<a name="595" href="#595">595</a> <em class="jxr_javadoccomment">     */</em>
-<a name="596" href="#596">596</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeConnection() <strong class="jxr_keyword">throws</strong> ConnectionException {
-<a name="597" href="#597">597</a>         removeCheckoutDirectory();
-<a name="598" href="#598">598</a>     }
-<a name="599" href="#599">599</a> 
-<a name="600" href="#600">600</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="601" href="#601">601</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#getIfNewer(java.lang.String,java.io.File,</em>
-<a name="602" href="#602">602</a> <em class="jxr_javadoccomment">     *      long)</em>
-<a name="603" href="#603">603</a> <em class="jxr_javadoccomment">     */</em>
-<a name="604" href="#604">604</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> getIfNewer(String resourceName, File destination, <strong class="jxr_keyword">long</strong> timestamp) <strong class="jxr_keyword">throws</strong> TransferFailedException,
-<a name="605" href="#605">605</a>         ResourceDoesNotExistException, AuthorizationException {
-<a name="606" href="#606">606</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(<span class="jxr_string">"Not currently supported: getIfNewer"</span>);
-<a name="607" href="#607">607</a>     }
-<a name="608" href="#608">608</a> 
-<a name="609" href="#609">609</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="610" href="#610">610</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#get(java.lang.String, java.io.File)</em>
-<a name="611" href="#611">611</a> <em class="jxr_javadoccomment">     */</em>
-<a name="612" href="#612">612</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> get(String resourceName, File destination) <strong class="jxr_keyword">throws</strong> TransferFailedException, ResourceDoesNotExistException,
-<a name="613" href="#613">613</a>         AuthorizationException {
-<a name="614" href="#614">614</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(<span class="jxr_string">"Not currently supported: get"</span>);
-<a name="615" href="#615">615</a>     }
-<a name="616" href="#616">616</a> 
-<a name="617" href="#617">617</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="618" href="#618">618</a> <em class="jxr_javadoccomment">     * Get the file list for the resource.</em>
-<a name="619" href="#619">619</a> <em class="jxr_javadoccomment">     *</em>
-<a name="620" href="#620">620</a> <em class="jxr_javadoccomment">     * @param  resourcePath the resource path.</em>
-<a name="621" href="#621">621</a> <em class="jxr_javadoccomment">     *</em>
-<a name="622" href="#622">622</a> <em class="jxr_javadoccomment">     * @return a List&amp;lt;String&amp;gt; with filenames/directories at the</em>
-<a name="623" href="#623">623</a> <em class="jxr_javadoccomment">     *         resourcepath.</em>
-<a name="624" href="#624">624</a> <em class="jxr_javadoccomment">     *</em>
-<a name="625" href="#625">625</a> <em class="jxr_javadoccomment">     * @throws TransferFailedException</em>
-<a name="626" href="#626">626</a> <em class="jxr_javadoccomment">     * @throws ResourceDoesNotExistException</em>
-<a name="627" href="#627">627</a> <em class="jxr_javadoccomment">     * @throws AuthorizationException</em>
-<a name="628" href="#628">628</a> <em class="jxr_javadoccomment">     *</em>
-<a name="629" href="#629">629</a> <em class="jxr_javadoccomment">     * @see    org.apache.maven.wagon.AbstractWagon#getFileList(java.lang.String)</em>
-<a name="630" href="#630">630</a> <em class="jxr_javadoccomment">     */</em>
-<a name="631" href="#631">631</a>     <strong class="jxr_keyword">public</strong> List&lt;String&gt; getFileList(String resourcePath) <strong class="jxr_keyword">throws</strong> TransferFailedException, ResourceDoesNotExistException,
-<a name="632" href="#632">632</a>         AuthorizationException {
-<a name="633" href="#633">633</a>         <strong class="jxr_keyword">try</strong> {
-<a name="634" href="#634">634</a>             ScmRepository repository = getScmRepository(getRepository().getUrl());
-<a name="635" href="#635">635</a>             ScmProvider   provider   = getScmProvider(repository.getProvider());
-<a name="636" href="#636">636</a>             ListScmResult result     = provider.list(repository,
-<a name="637" href="#637">637</a>                                                      <strong class="jxr_keyword">new</strong> ScmFileSet(<strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"."</span>), <strong class="jxr_keyword">new</strong> File(resourcePath)), false, (ScmVersion) <strong class="jxr_keyword">null</strong>);
-<a name="638" href="#638">638</a> 
-<a name="639" href="#639">639</a>             <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
-<a name="640" href="#640">640</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ResourceDoesNotExistException(result.getProviderMessage());
-<a name="641" href="#641">641</a>             }
-<a name="642" href="#642">642</a> 
-<a name="643" href="#643">643</a>             List&lt;String&gt; files = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;();
-<a name="644" href="#644">644</a> 
-<a name="645" href="#645">645</a>             <strong class="jxr_keyword">for</strong> (ScmFile f : getListScmResultFiles(result)) {
-<a name="646" href="#646">646</a>                 files.add(f.getPath());
-<a name="647" href="#647">647</a>                 System.out.println(<span class="jxr_string">"LIST FILE: "</span> + f + <span class="jxr_string">" (path="</span> + f.getPath() + <span class="jxr_string">")"</span>);
-<a name="648" href="#648">648</a>             }
-<a name="649" href="#649">649</a> 
-<a name="650" href="#650">650</a>             <strong class="jxr_keyword">return</strong> files;
-<a name="651" href="#651">651</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
-<a name="652" href="#652">652</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error getting filelist from SCM"</span>, e);
-<a name="653" href="#653">653</a>         }
-<a name="654" href="#654">654</a>     }
-<a name="655" href="#655">655</a> 
-<a name="656" href="#656">656</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="657" href="#657">657</a> <em class="jxr_javadoccomment">     * Wrapper around listScmResult.getFiles() to avoid having a larger method</em>
-<a name="658" href="#658">658</a> <em class="jxr_javadoccomment">     * needing the suppressWarnings attribute.</em>
-<a name="659" href="#659">659</a> <em class="jxr_javadoccomment">     *</em>
-<a name="660" href="#660">660</a> <em class="jxr_javadoccomment">     * @param  result the ListScmResult.</em>
-<a name="661" href="#661">661</a> <em class="jxr_javadoccomment">     *</em>
-<a name="662" href="#662">662</a> <em class="jxr_javadoccomment">     * @return the files.</em>
-<a name="663" href="#663">663</a> <em class="jxr_javadoccomment">     */</em>
-<a name="664" href="#664">664</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a name="665" href="#665">665</a>     <strong class="jxr_keyword">private</strong> List&lt;ScmFile&gt; getListScmResultFiles(ListScmResult result) {
-<a name="666" href="#666">666</a>         <strong class="jxr_keyword">return</strong> (List&lt;ScmFile&gt;) result.getFiles();
-<a name="667" href="#667">667</a>     }
-<a name="668" href="#668">668</a> 
-<a name="669" href="#669">669</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="670" href="#670">670</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#resourceExists(java.lang.String)</em>
-<a name="671" href="#671">671</a> <em class="jxr_javadoccomment">     */</em>
-<a name="672" href="#672">672</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> resourceExists(String resourceName) <strong class="jxr_keyword">throws</strong> TransferFailedException, AuthorizationException {
-<a name="673" href="#673">673</a>         <strong class="jxr_keyword">try</strong> {
-<a name="674" href="#674">674</a>             getFileList(resourceName);
-<a name="675" href="#675">675</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a name="676" href="#676">676</a>         } <strong class="jxr_keyword">catch</strong> (ResourceDoesNotExistException e) {
-<a name="677" href="#677">677</a>             <strong class="jxr_keyword">return</strong> false;
-<a name="678" href="#678">678</a>         }
-<a name="679" href="#679">679</a>     }
-<a name="680" href="#680">680</a> 
-<a name="681" href="#681">681</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="682" href="#682">682</a> <em class="jxr_javadoccomment">     * Get the filename format for a file.</em>
-<a name="683" href="#683">683</a> <em class="jxr_javadoccomment">     *</em>
-<a name="684" href="#684">684</a> <em class="jxr_javadoccomment">     * @param  filename the file name.</em>
-<a name="685" href="#685">685</a> <em class="jxr_javadoccomment">     *</em>
-<a name="686" href="#686">686</a> <em class="jxr_javadoccomment">     * @return the file name.</em>
-<a name="687" href="#687">687</a> <em class="jxr_javadoccomment">     */</em>
-<a name="688" href="#688">688</a>     <strong class="jxr_keyword">private</strong> String getFilename(String filename) {
-<a name="689" href="#689">689</a>         String fname = StringUtils.replace(filename, <span class="jxr_string">"/"</span>, File.separator);
-<a name="690" href="#690">690</a> 
-<a name="691" href="#691">691</a>         <strong class="jxr_keyword">return</strong> FileUtils.filename(fname);
-<a name="692" href="#692">692</a>     }
-<a name="693" href="#693">693</a> 
-<a name="694" href="#694">694</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="695" href="#695">695</a> <em class="jxr_javadoccomment">     * Get the directory format for a file.</em>
-<a name="696" href="#696">696</a> <em class="jxr_javadoccomment">     *</em>
-<a name="697" href="#697">697</a> <em class="jxr_javadoccomment">     * @param  filename the file name.</em>
-<a name="698" href="#698">698</a> <em class="jxr_javadoccomment">     *</em>
-<a name="699" href="#699">699</a> <em class="jxr_javadoccomment">     * @return the directory name.</em>
-<a name="700" href="#700">700</a> <em class="jxr_javadoccomment">     */</em>
-<a name="701" href="#701">701</a>     <strong class="jxr_keyword">private</strong> String getDirname(String filename) {
-<a name="702" href="#702">702</a>         String fname = StringUtils.replace(filename, <span class="jxr_string">"/"</span>, File.separator);
-<a name="703" href="#703">703</a> 
-<a name="704" href="#704">704</a>         <strong class="jxr_keyword">return</strong> FileUtils.dirname(fname);
-<a name="705" href="#705">705</a>     }
-<a name="706" href="#706">706</a> 
-<a name="707" href="#707">707</a>     <em class="jxr_javadoccomment">/**</em>
-<a name="708" href="#708">708</a> <em class="jxr_javadoccomment">     * Wrapper around gitCommand.execute to handle setting the logger.</em>
-<a name="709" href="#709">709</a> <em class="jxr_javadoccomment">     *</em>
-<a name="710" href="#710">710</a> <em class="jxr_javadoccomment">     * @param  scmProvider the SCM provider.</em>
-<a name="711" href="#711">711</a> <em class="jxr_javadoccomment">     * @param  command     the command.</em>
-<a name="712" href="#712">712</a> <em class="jxr_javadoccomment">     * @param  repository  the SCM repository.</em>
-<a name="713" href="#713">713</a> <em class="jxr_javadoccomment">     * @param  fileSet     the file set.</em>
-<a name="714" href="#714">714</a> <em class="jxr_javadoccomment">     * @param  parameters  any parameters to the command.</em>
-<a name="715" href="#715">715</a> <em class="jxr_javadoccomment">     *</em>
-<a name="716" href="#716">716</a> <em class="jxr_javadoccomment">     * @return the SCM result.</em>
-<a name="717" href="#717">717</a> <em class="jxr_javadoccomment">     *</em>
-<a name="718" href="#718">718</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
-<a name="719" href="#719">719</a> <em class="jxr_javadoccomment">     */</em>
-<a name="720" href="#720">720</a>     <strong class="jxr_keyword">protected</strong> ScmResult executeCommand(GitExeScmProvider scmProvider, GitCommand command, ScmProviderRepository repository,
-<a name="721" href="#721">721</a>             ScmFileSet fileSet, CommandParameters parameters) <strong class="jxr_keyword">throws</strong> ScmException {
-<a name="722" href="#722">722</a>         command.setLogger(scmProvider.getLogger());
-<a name="723" href="#723">723</a> 
-<a name="724" href="#724">724</a>         <strong class="jxr_keyword">return</strong> command.execute(repository, fileSet, parameters);
-<a name="725" href="#725">725</a>     }
-<a name="726" href="#726">726</a> }
+<a name="594" href="#594">594</a> <em class="jxr_javadoccomment">     * Check that the ScmResult was a successful operation</em>
+<a name="595" href="#595">595</a> <em class="jxr_javadoccomment">     *</em>
+<a name="596" href="#596">596</a> <em class="jxr_javadoccomment">     * @param  result the SCM result.</em>
+<a name="597" href="#597">597</a> <em class="jxr_javadoccomment">     *</em>
+<a name="598" href="#598">598</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
+<a name="599" href="#599">599</a> <em class="jxr_javadoccomment">     */</em>
+<a name="600" href="#600">600</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkScmResult(ScmResult result) <strong class="jxr_keyword">throws</strong> ScmException {
+<a name="601" href="#601">601</a>         <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
+<a name="602" href="#602">602</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ScmException(<span class="jxr_string">"Unable to commit file. "</span> + result.getProviderMessage() + <span class="jxr_string">" "</span>
+<a name="603" href="#603">603</a>                                    + (result.getCommandOutput() == <strong class="jxr_keyword">null</strong> ? <span class="jxr_string">""</span> : result.getCommandOutput()));
+<a name="604" href="#604">604</a>         }
+<a name="605" href="#605">605</a>     }
+<a name="606" href="#606">606</a> 
+<a name="607" href="#607">607</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="608" href="#608">608</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#closeConnection()</em>
+<a name="609" href="#609">609</a> <em class="jxr_javadoccomment">     */</em>
+<a name="610" href="#610">610</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeConnection() <strong class="jxr_keyword">throws</strong> ConnectionException {
+<a name="611" href="#611">611</a>         removeCheckoutDirectory();
+<a name="612" href="#612">612</a>     }
+<a name="613" href="#613">613</a> 
+<a name="614" href="#614">614</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="615" href="#615">615</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#getIfNewer(java.lang.String,java.io.File,</em>
+<a name="616" href="#616">616</a> <em class="jxr_javadoccomment">     *      long)</em>
+<a name="617" href="#617">617</a> <em class="jxr_javadoccomment">     */</em>
+<a name="618" href="#618">618</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> getIfNewer(String resourceName, File destination, <strong class="jxr_keyword">long</strong> timestamp) <strong class="jxr_keyword">throws</strong> TransferFailedException,
+<a name="619" href="#619">619</a>         ResourceDoesNotExistException, AuthorizationException {
+<a name="620" href="#620">620</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(<span class="jxr_string">"Not currently supported: getIfNewer"</span>);
+<a name="621" href="#621">621</a>     }
+<a name="622" href="#622">622</a> 
+<a name="623" href="#623">623</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="624" href="#624">624</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.Wagon#get(java.lang.String, java.io.File)</em>
+<a name="625" href="#625">625</a> <em class="jxr_javadoccomment">     */</em>
+<a name="626" href="#626">626</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> get(String resourceName, File destination) <strong class="jxr_keyword">throws</strong> TransferFailedException, ResourceDoesNotExistException,
+<a name="627" href="#627">627</a>         AuthorizationException {
+<a name="628" href="#628">628</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(<span class="jxr_string">"Not currently supported: get"</span>);
+<a name="629" href="#629">629</a>     }
+<a name="630" href="#630">630</a> 
+<a name="631" href="#631">631</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="632" href="#632">632</a> <em class="jxr_javadoccomment">     * Get the file list for the resource.</em>
+<a name="633" href="#633">633</a> <em class="jxr_javadoccomment">     *</em>
+<a name="634" href="#634">634</a> <em class="jxr_javadoccomment">     * @param  resourcePath the resource path.</em>
+<a name="635" href="#635">635</a> <em class="jxr_javadoccomment">     *</em>
+<a name="636" href="#636">636</a> <em class="jxr_javadoccomment">     * @return a List&amp;lt;String&amp;gt; with filenames/directories at the</em>
+<a name="637" href="#637">637</a> <em class="jxr_javadoccomment">     *         resourcepath.</em>
+<a name="638" href="#638">638</a> <em class="jxr_javadoccomment">     *</em>
+<a name="639" href="#639">639</a> <em class="jxr_javadoccomment">     * @throws TransferFailedException</em>
+<a name="640" href="#640">640</a> <em class="jxr_javadoccomment">     * @throws ResourceDoesNotExistException</em>
+<a name="641" href="#641">641</a> <em class="jxr_javadoccomment">     * @throws AuthorizationException</em>
+<a name="642" href="#642">642</a> <em class="jxr_javadoccomment">     *</em>
+<a name="643" href="#643">643</a> <em class="jxr_javadoccomment">     * @see    org.apache.maven.wagon.AbstractWagon#getFileList(java.lang.String)</em>
+<a name="644" href="#644">644</a> <em class="jxr_javadoccomment">     */</em>
+<a name="645" href="#645">645</a>     <strong class="jxr_keyword">public</strong> List&lt;String&gt; getFileList(String resourcePath) <strong class="jxr_keyword">throws</strong> TransferFailedException, ResourceDoesNotExistException,
+<a name="646" href="#646">646</a>         AuthorizationException {
+<a name="647" href="#647">647</a>         <strong class="jxr_keyword">try</strong> {
+<a name="648" href="#648">648</a>             ScmRepository repository = getScmRepository(getRepository().getUrl());
+<a name="649" href="#649">649</a>             ScmProvider   provider   = getScmProvider(repository.getProvider());
+<a name="650" href="#650">650</a>             ListScmResult result     = provider.list(repository,
+<a name="651" href="#651">651</a>                                                      <strong class="jxr_keyword">new</strong> ScmFileSet(<strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"."</span>), <strong class="jxr_keyword">new</strong> File(resourcePath)), false, (ScmVersion) <strong class="jxr_keyword">null</strong>);
+<a name="652" href="#652">652</a> 
+<a name="653" href="#653">653</a>             <strong class="jxr_keyword">if</strong> (!result.isSuccess()) {
+<a name="654" href="#654">654</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ResourceDoesNotExistException(result.getProviderMessage());
+<a name="655" href="#655">655</a>             }
+<a name="656" href="#656">656</a> 
+<a name="657" href="#657">657</a>             List&lt;String&gt; files = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;();
+<a name="658" href="#658">658</a> 
+<a name="659" href="#659">659</a>             <strong class="jxr_keyword">for</strong> (ScmFile f : getListScmResultFiles(result)) {
+<a name="660" href="#660">660</a>                 files.add(f.getPath());
+<a name="661" href="#661">661</a>                 System.out.println(<span class="jxr_string">"LIST FILE: "</span> + f + <span class="jxr_string">" (path="</span> + f.getPath() + <span class="jxr_string">")"</span>);
+<a name="662" href="#662">662</a>             }
+<a name="663" href="#663">663</a> 
+<a name="664" href="#664">664</a>             <strong class="jxr_keyword">return</strong> files;
+<a name="665" href="#665">665</a>         } <strong class="jxr_keyword">catch</strong> (ScmException e) {
+<a name="666" href="#666">666</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> TransferFailedException(<span class="jxr_string">"Error getting filelist from SCM"</span>, e);
+<a name="667" href="#667">667</a>         }
+<a name="668" href="#668">668</a>     }
+<a name="669" href="#669">669</a> 
+<a name="670" href="#670">670</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="671" href="#671">671</a> <em class="jxr_javadoccomment">     * Wrapper around listScmResult.getFiles() to avoid having a larger method</em>
+<a name="672" href="#672">672</a> <em class="jxr_javadoccomment">     * needing the suppressWarnings attribute.</em>
+<a name="673" href="#673">673</a> <em class="jxr_javadoccomment">     *</em>
+<a name="674" href="#674">674</a> <em class="jxr_javadoccomment">     * @param  result the ListScmResult.</em>
+<a name="675" href="#675">675</a> <em class="jxr_javadoccomment">     *</em>
+<a name="676" href="#676">676</a> <em class="jxr_javadoccomment">     * @return the files.</em>
+<a name="677" href="#677">677</a> <em class="jxr_javadoccomment">     */</em>
+<a name="678" href="#678">678</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a name="679" href="#679">679</a>     <strong class="jxr_keyword">private</strong> List&lt;ScmFile&gt; getListScmResultFiles(ListScmResult result) {
+<a name="680" href="#680">680</a>         <strong class="jxr_keyword">return</strong> (List&lt;ScmFile&gt;) result.getFiles();
+<a name="681" href="#681">681</a>     }
+<a name="682" href="#682">682</a> 
+<a name="683" href="#683">683</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="684" href="#684">684</a> <em class="jxr_javadoccomment">     * @see org.apache.maven.wagon.AbstractWagon#resourceExists(java.lang.String)</em>
+<a name="685" href="#685">685</a> <em class="jxr_javadoccomment">     */</em>
+<a name="686" href="#686">686</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> resourceExists(String resourceName) <strong class="jxr_keyword">throws</strong> TransferFailedException, AuthorizationException {
+<a name="687" href="#687">687</a>         <strong class="jxr_keyword">try</strong> {
+<a name="688" href="#688">688</a>             getFileList(resourceName);
+<a name="689" href="#689">689</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a name="690" href="#690">690</a>         } <strong class="jxr_keyword">catch</strong> (ResourceDoesNotExistException e) {
+<a name="691" href="#691">691</a>             <strong class="jxr_keyword">return</strong> false;
+<a name="692" href="#692">692</a>         }
+<a name="693" href="#693">693</a>     }
+<a name="694" href="#694">694</a> 
+<a name="695" href="#695">695</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="696" href="#696">696</a> <em class="jxr_javadoccomment">     * Get the filename format for a file.</em>
+<a name="697" href="#697">697</a> <em class="jxr_javadoccomment">     *</em>
+<a name="698" href="#698">698</a> <em class="jxr_javadoccomment">     * @param  filename the file name.</em>
+<a name="699" href="#699">699</a> <em class="jxr_javadoccomment">     *</em>
+<a name="700" href="#700">700</a> <em class="jxr_javadoccomment">     * @return the file name.</em>
+<a name="701" href="#701">701</a> <em class="jxr_javadoccomment">     */</em>
+<a name="702" href="#702">702</a>     <strong class="jxr_keyword">private</strong> String getFilename(String filename) {
+<a name="703" href="#703">703</a>         String fname = StringUtils.replace(filename, <span class="jxr_string">"/"</span>, File.separator);
+<a name="704" href="#704">704</a> 
+<a name="705" href="#705">705</a>         <strong class="jxr_keyword">return</strong> FileUtils.filename(fname);
+<a name="706" href="#706">706</a>     }
+<a name="707" href="#707">707</a> 
+<a name="708" href="#708">708</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="709" href="#709">709</a> <em class="jxr_javadoccomment">     * Get the directory format for a file.</em>
+<a name="710" href="#710">710</a> <em class="jxr_javadoccomment">     *</em>
+<a name="711" href="#711">711</a> <em class="jxr_javadoccomment">     * @param  filename the file name.</em>
+<a name="712" href="#712">712</a> <em class="jxr_javadoccomment">     *</em>
+<a name="713" href="#713">713</a> <em class="jxr_javadoccomment">     * @return the directory name.</em>
+<a name="714" href="#714">714</a> <em class="jxr_javadoccomment">     */</em>
+<a name="715" href="#715">715</a>     <strong class="jxr_keyword">private</strong> String getDirname(String filename) {
+<a name="716" href="#716">716</a>         String fname = StringUtils.replace(filename, <span class="jxr_string">"/"</span>, File.separator);
+<a name="717" href="#717">717</a> 
+<a name="718" href="#718">718</a>         <strong class="jxr_keyword">return</strong> FileUtils.dirname(fname);
+<a name="719" href="#719">719</a>     }
+<a name="720" href="#720">720</a> 
+<a name="721" href="#721">721</a>     <em class="jxr_javadoccomment">/**</em>
+<a name="722" href="#722">722</a> <em class="jxr_javadoccomment">     * Wrapper around gitCommand.execute to handle setting the logger.</em>
+<a name="723" href="#723">723</a> <em class="jxr_javadoccomment">     *</em>
+<a name="724" href="#724">724</a> <em class="jxr_javadoccomment">     * @param  scmProvider the SCM provider.</em>
+<a name="725" href="#725">725</a> <em class="jxr_javadoccomment">     * @param  command     the command.</em>
+<a name="726" href="#726">726</a> <em class="jxr_javadoccomment">     * @param  repository  the SCM repository.</em>
+<a name="727" href="#727">727</a> <em class="jxr_javadoccomment">     * @param  fileSet     the file set.</em>
+<a name="728" href="#728">728</a> <em class="jxr_javadoccomment">     * @param  parameters  any parameters to the command.</em>
+<a name="729" href="#729">729</a> <em class="jxr_javadoccomment">     *</em>
+<a name="730" href="#730">730</a> <em class="jxr_javadoccomment">     * @return the SCM result.</em>
+<a name="731" href="#731">731</a> <em class="jxr_javadoccomment">     *</em>
+<a name="732" href="#732">732</a> <em class="jxr_javadoccomment">     * @throws ScmException</em>
+<a name="733" href="#733">733</a> <em class="jxr_javadoccomment">     */</em>
+<a name="734" href="#734">734</a>     <strong class="jxr_keyword">protected</strong> ScmResult executeCommand(GitExeScmProvider scmProvider, GitCommand command, ScmProviderRepository repository,
+<a name="735" href="#735">735</a>             ScmFileSet fileSet, CommandParameters parameters) <strong class="jxr_keyword">throws</strong> ScmException {
+<a name="736" href="#736">736</a>         command.setLogger(scmProvider.getLogger());
+<a name="737" href="#737">737</a> 
+<a name="738" href="#738">738</a>         <strong class="jxr_keyword">return</strong> command.execute(repository, fileSet, parameters);
+<a name="739" href="#739">739</a>     }
+<a name="740" href="#740">740</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
