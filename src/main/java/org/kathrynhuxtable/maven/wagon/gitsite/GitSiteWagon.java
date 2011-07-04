@@ -82,6 +82,18 @@ import org.kathrynhuxtable.maven.wagon.gitsite.git.GitSiteCheckOutCommand;
  * git push origin master:${siteBranch}
  * rm -Rf ${checkoutDirectory}
  * </pre>
+ * 
+ * We <em>need</em> to create the gh-pages branch if it doesn't already exist:
+ * 
+ * <pre>
+ * cd ${checkoutDirectory}
+ * git symbolic-ref HEAD refs/heads/gh-pages
+ * rm .git/index
+ * git clean -fdx
+ * git add .
+ * git commit -a -m "First pages commit"
+ * git push origin gh-pages
+ * </pre>
  *
  * @plexus.component role="org.apache.maven.wagon.Wagon" role-hint="gitsite"
  *                   instantiation-strategy="per-lookup"
@@ -206,12 +218,10 @@ public class GitSiteWagon extends AbstractWagon {
 
         Random rand = new Random(System.currentTimeMillis() + Runtime.getRuntime().freeMemory());
 
-        synchronized (rand) {
-            do {
-                checkoutDirectory = new File(System.getProperty("java.io.tmpdir"),
-                                             "wagon-scm" + fmt.format(Math.abs(rand.nextInt())) + ".checkout");
-            } while (checkoutDirectory.exists());
-        }
+        do {
+            checkoutDirectory = new File(System.getProperty("java.io.tmpdir"),
+                                         "wagon-scm" + fmt.format(Math.abs(rand.nextInt())) + ".checkout");
+        } while (checkoutDirectory.exists());
 
         return checkoutDirectory;
     }
