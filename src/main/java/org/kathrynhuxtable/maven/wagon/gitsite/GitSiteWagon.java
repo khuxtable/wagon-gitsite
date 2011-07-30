@@ -515,7 +515,10 @@ public class GitSiteWagon extends AbstractWagon {
                 siteBranch = "gh-pages";
             }
 
-            url = "scm:git:ssh://" + url;
+            if (url.startsWith("file:///"))
+                url = "scm:git:" + url;
+            else
+                url = "scm:git:ssh://" + url;
             repository.setUrl(url);
         }
 
