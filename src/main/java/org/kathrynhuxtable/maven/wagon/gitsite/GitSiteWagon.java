@@ -529,7 +529,7 @@ public class GitSiteWagon extends AbstractWagon {
      * @see org.apache.maven.wagon.Wagon#put(java.io.File, java.lang.String)
      */
     public void put(File source, String destination) throws TransferFailedException {
-        throw new TransferFailedException("Not currently supported: put");
+    	putResource(source, destination);
     }
 
     /**
@@ -541,7 +541,11 @@ public class GitSiteWagon extends AbstractWagon {
             throw new IllegalArgumentException("Source is not a directory: " + sourceDirectory);
         }
 
-        Resource target = new Resource(destinationDirectory);
+        putResource(sourceDirectory, destinationDirectory);
+    }
+
+	private void putResource(File sourceDirectory, String destinationDirectory) throws TransferFailedException {
+		Resource target = new Resource(destinationDirectory);
 
         firePutInitiated(target, sourceDirectory);
 
@@ -601,7 +605,7 @@ public class GitSiteWagon extends AbstractWagon {
         }
 
         firePutCompleted(target, sourceDirectory);
-    }
+	}
 
     /**
      * Check that the ScmResult was a successful operation
