@@ -381,24 +381,19 @@
 	<distributionManagement>
 		<!-- Site to deploy releases to. -->
 		<repository>
-			<id>ossrh</id>
-			<url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+			<id>jclouds-cloudbees-private-release</id>
+			<url>davs://repository-jclouds.forge.cloudbees.com/release</url>
 		</repository>
-		<!-- Site to deploy snapshots to. -->
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
 		<!-- Site to deploy documentation to. -->
 		<site>
 			<id>github-site</id>
-			<url>gitsite:git@github.com/khuxtable/wagon-gitsite.git</url>
+			<url>gitsite:git@github.com/demobox/wagon-gitsite.git</url>
 		</site>
 	</distributionManagement>
 	<scm>
-		<connection>scm:git:git://github.com/khuxtable/wagon-gitsite.git</connection>
-		<developerConnection>scm:git:git@github.com:khuxtable/wagon-gitsite.git</developerConnection>
-		<url>http://github.com/khuxtable/wagon-gitsite</url>
+		<connection>scm:git:git://github.com/demobox/wagon-gitsite.git</connection>
+		<developerConnection>scm:git:git@github.com:demobox/wagon-gitsite.git</developerConnection>
+		<url>http://github.com/demobox/wagon-gitsite</url>
 	</scm>
 	<reporting>
 		<plugins>
