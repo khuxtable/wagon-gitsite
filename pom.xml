@@ -356,27 +356,24 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-	<distributionManagement>
-		<!-- Site to deploy releases to. -->
+    <distributionManagement>
+        <site>
+            <id>github-project-site</id>
+            <url>gitsite:git@github.com/keyz182/TrianaCloud.git</url>
+        </site>
 		<repository>
-			<id>ossrh</id>
-			<url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+			<id>repo</id>
+			<url>https://github.com/keyz182/maven-repo/raw/master/releases</url>
 		</repository>
-		<!-- Site to deploy snapshots to. -->
 		<snapshotRepository>
-			<id>ossrh</id>
-			<url>http://oss.sonatype.org/content/repositories/snapshots</url>
+			<id>snapshot-repo</id>
+			<url>https://github.com/keyz182/maven-repo/raw/master/snapshots</url>
 		</snapshotRepository>
-		<!-- Site to deploy documentation to. -->
-		<site>
-			<id>github-site</id>
-			<url>gitsite:git@github.com/khuxtable/wagon-gitsite.git</url>
-		</site>
-	</distributionManagement>
+    </distributionManagement>
 	<scm>
-		<connection>scm:git:git://github.com/khuxtable/wagon-gitsite.git</connection>
-		<developerConnection>scm:git:git@github.com:khuxtable/wagon-gitsite.git</developerConnection>
-		<url>http://github.com/khuxtable/wagon-gitsite</url>
+		<connection>scm:git:git://github.com/keyz182/wagon-gitsite.git</connection>
+		<developerConnection>scm:git:git@github.com:keyz182/wagon-gitsite.git</developerConnection>
+		<url>http://github.com/keyz182/wagon-gitsite</url>
 	</scm>
 	<reporting>
 		<plugins>
