@@ -37,6 +37,7 @@ import org.apache.maven.scm.command.add.AddScmResult;
 import org.apache.maven.scm.command.checkin.CheckInScmResult;
 import org.apache.maven.scm.command.checkout.CheckOutScmResult;
 import org.apache.maven.scm.command.list.ListScmResult;
+import org.apache.maven.scm.log.ScmLogger;
 import org.apache.maven.scm.manager.NoSuchScmProviderException;
 import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.provider.ScmProvider;
@@ -364,14 +365,19 @@ public class GitSiteWagon extends AbstractWagon {
             throw new TransferFailedException("Error listing repository: " + e.getMessage(), e);
         }
 
+        // URL didn't end with '/' on my maven-site 3.0 + Maven 3.0.4, so be defensive when combining url + targetName.
+        String url = getRepository().getUrl();
+        if (!url.endsWith("/")) url+="/";
+        url += targetName;
+
         /* A URL for a module will look like: 
          *   scm:git:ssh://github.com/auser/project.git/module
          * so we strip the module to get just:
          *   scm:git:ssh://github.com/auser/project.git
          * to ensure a successful checkout, then adjust the relative path.
          */
-        String url = getRepository().getUrl();
         String relPath = "";
+        
         if (!url.endsWith(".git")) {
             final int iGitSuffix = url.lastIndexOf(".git");
             if (iGitSuffix > 0) {
@@ -379,6 +385,9 @@ public class GitSiteWagon extends AbstractWagon {
                 url = url.substring(0, iGitSuffix + 4);
             }
         }
+        final ScmLogger logger = ((GitExeScmProvider)scmProvider).getLogger();
+        logger.debug("checkOut url: " + url);
+        logger.debug("checkOut relPath: " + relPath);
 
         // ok, we've established that target exists, or is empty.
         // Check the resource out; if it doesn't exist, that means we're in the svn repo url root,
@@ -411,6 +420,7 @@ public class GitSiteWagon extends AbstractWagon {
             String p = (String) stack.pop();
 
             relPath += p + '/';
+            logger.debug(" * checkOut relPath: " + relPath);
 
             File newDir = new File(checkoutDirectory, relPath);
 
@@ -511,6 +521,9 @@ public class GitSiteWagon extends AbstractWagon {
             if (index > -1) {
                 siteBranch = url.substring(index + 1);
                 url        = url.substring(0, index);
+
+                // Maven seems to add '/' in the end even when I didn't specify it in POM
+                if (siteBranch.endsWith("/"))   siteBranch=siteBranch.substring(0,siteBranch.length()-1);
             } else {
                 siteBranch = "gh-pages";
             }
