@@ -511,6 +511,9 @@ public class GitSiteWagon extends AbstractWagon {
             if (index > -1) {
                 siteBranch = url.substring(index + 1);
                 url        = url.substring(0, index);
+
+                // Maven seems to add '/' in the end even when I didn't specify it in POM
+                if (siteBranch.endsWith("/"))   siteBranch=siteBranch.substring(0,siteBranch.length()-1);
             } else {
                 siteBranch = "gh-pages";
             }
