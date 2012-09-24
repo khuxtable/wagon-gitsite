@@ -365,13 +365,17 @@ public class GitSiteWagon extends AbstractWagon {
             throw new TransferFailedException("Error listing repository: " + e.getMessage(), e);
         }
 
+        // URL didn't end with '/' on my maven-site 3.0 + Maven 3.0.4, so be defensive when combining url + targetName.
+        String url = getRepository().getUrl();
+        if (!url.endsWith("/")) url+="/";
+        url += targetName;
+
         /* A URL for a module will look like: 
          *   scm:git:ssh://github.com/auser/project.git/module
          * so we strip the module to get just:
          *   scm:git:ssh://github.com/auser/project.git
          * to ensure a successful checkout, then adjust the relative path.
          */
-        String url = getRepository().getUrl() + targetName;
         String relPath = "";
         
         if (!url.endsWith(".git")) {
