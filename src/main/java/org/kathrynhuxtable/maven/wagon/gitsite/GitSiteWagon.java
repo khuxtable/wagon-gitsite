@@ -518,7 +518,7 @@ public class GitSiteWagon extends AbstractWagon {
             if (url.startsWith("file:///"))
                 url = "scm:git:" + url;
             else
-                url = "scm:git:ssh://" + url;
+                url = "scm:git:ssh://git@" + url;
             repository.setUrl(url);
         }
 
