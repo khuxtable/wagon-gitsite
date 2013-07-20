@@ -18,6 +18,8 @@ package org.kathrynhuxtable.maven.wagon.gitsite;
 import java.io.File;
 import java.io.IOException;
 
+import java.net.URI;
+
 import java.text.DecimalFormat;
 
 import java.util.ArrayList;
@@ -113,7 +115,7 @@ public class GitSiteWagon extends AbstractWagon {
     private ScmManager scmManager;
 
     /** The site branch. Set in connect. */
-    private String siteBranch;
+    private String siteBranch = "gh-pages";
 
     /** The check-out directory. */
     private File checkoutDirectory;
@@ -506,16 +508,18 @@ public class GitSiteWagon extends AbstractWagon {
 
         if (url.startsWith("gitsite:")) {
             url = url.substring(8);
-            int index = url.indexOf(':');
 
+            int index = url.lastIndexOf(':');
             if (index > -1) {
-                siteBranch = url.substring(index + 1);
-                url        = url.substring(0, index);
-            } else {
-                siteBranch = "gh-pages";
+                String candidateBranch = url.substring(index + 1);
+                String candidateUrl    = url.substring(0, index);
+                if (!candidateBranch.contains(":") && candidateUrl.contains("/")) {
+                    siteBranch = candidateBranch;
+                    url        = candidateUrl;
+                }
             }
 
-            if (url.startsWith("file:///"))
+            if (URI.create(url).getScheme() != null)
                 url = "scm:git:" + url;
             else
                 url = "scm:git:ssh://" + url;
