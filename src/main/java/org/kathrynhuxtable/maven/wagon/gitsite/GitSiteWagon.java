@@ -37,6 +37,7 @@ import org.apache.maven.scm.command.add.AddScmResult;
 import org.apache.maven.scm.command.checkin.CheckInScmResult;
 import org.apache.maven.scm.command.checkout.CheckOutScmResult;
 import org.apache.maven.scm.command.list.ListScmResult;
+import org.apache.maven.scm.log.ScmLogger;
 import org.apache.maven.scm.manager.NoSuchScmProviderException;
 import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.provider.ScmProvider;
@@ -370,8 +371,9 @@ public class GitSiteWagon extends AbstractWagon {
          *   scm:git:ssh://github.com/auser/project.git
          * to ensure a successful checkout, then adjust the relative path.
          */
-        String url = getRepository().getUrl();
+        String url = getRepository().getUrl() + targetName;
         String relPath = "";
+        
         if (!url.endsWith(".git")) {
             final int iGitSuffix = url.lastIndexOf(".git");
             if (iGitSuffix > 0) {
@@ -379,6 +381,9 @@ public class GitSiteWagon extends AbstractWagon {
                 url = url.substring(0, iGitSuffix + 4);
             }
         }
+        final ScmLogger logger = ((GitExeScmProvider)scmProvider).getLogger();
+        logger.debug("checkOut url: " + url);
+        logger.debug("checkOut relPath: " + relPath);
 
         // ok, we've established that target exists, or is empty.
         // Check the resource out; if it doesn't exist, that means we're in the svn repo url root,
@@ -411,6 +416,7 @@ public class GitSiteWagon extends AbstractWagon {
             String p = (String) stack.pop();
 
             relPath += p + '/';
+            logger.debug(" * checkOut relPath: " + relPath);
 
             File newDir = new File(checkoutDirectory, relPath);
 

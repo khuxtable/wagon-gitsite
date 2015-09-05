@@ -9,3 +9,5 @@ the documentation.
 Hopefully, the changes in this fork will be integrated into the original
 project.
 
+Note that this plugin has been **deprecated**; Please use
+[maven-scm-publish-plugin](http://maven.apache.org/plugins/maven-scm-publish-plugin/).
